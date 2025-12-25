@@ -370,19 +370,26 @@ def get_my_applications():
 @bp.route('/hr/jobs', methods=['GET'])
 @jwt_required()
 def get_hr_jobs():
-    """Get all jobs created by the HR user"""
+    """Get all jobs created by the HR user or their company"""
     user_id = int(get_jwt_identity())
     user = User.query.get(user_id)
     
-    if not user or user.user_role != 'hr':
+    if not user or user.user_role not in ['hr', 'admin']:
         return jsonify({
             'success': False,
             'message': 'Only HR users can access this endpoint'
         }), 403
     
-    jobs = Job.query.filter_by(created_by=user_id).order_by(
-        Job.created_at.desc()
-    ).all()
+    # If user has a company, get all jobs from that company
+    if user.company_id:
+        jobs = Job.query.filter_by(company_id=user.company_id).order_by(
+            Job.created_at.desc()
+        ).all()
+    else:
+        # Otherwise get jobs created by this user
+        jobs = Job.query.filter_by(created_by=user_id).order_by(
+            Job.created_at.desc()
+        ).all()
     
     return jsonify({
         'success': True,
@@ -397,21 +404,24 @@ def get_hr_metrics():
     user_id = int(get_jwt_identity())
     user = User.query.get(user_id)
     
-    if not user or user.user_role != 'hr':
+    if not user or user.user_role not in ['hr', 'admin']:
         return jsonify({
             'success': False,
             'message': 'Only HR users can access this endpoint'
         }), 403
     
-    # Get jobs created by this HR user
-    jobs = Job.query.filter_by(created_by=user_id).all()
+    # Get jobs for this HR user or their company
+    if user.company_id:
+        jobs = Job.query.filter_by(company_id=user.company_id).all()
+    else:
+        jobs = Job.query.filter_by(created_by=user_id).all()
     
     total_jobs = len(jobs)
     open_positions = len([j for j in jobs if j.status == 'published'])
     
     # Get all applications for HR's jobs
     job_ids = [j.id for j in jobs]
-    applications = Application.query.filter(Application.job_id.in_(job_ids)).all()
+    applications = Application.query.filter(Application.job_id.in_(job_ids)).all() if job_ids else []
     
     total_applicants = len(applications)
     pending_applications = len([a for a in applications if a.status == 'pending'])

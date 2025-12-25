@@ -6,8 +6,6 @@ import {
   Search, 
   Plus, 
   Clock, 
-  CheckCircle, 
-  XCircle,
   Users,
   MapPin,
   Globe,
