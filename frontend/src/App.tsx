@@ -21,6 +21,8 @@ import HRDashboard from '@/pages/hr/Dashboard'
 import HRJobs from '@/pages/hr/Jobs'
 import CreateJob from '@/pages/hr/CreateJob'
 import HRCompany from '@/pages/hr/Company'
+import HRApplications from '@/pages/hr/Applications'
+import HRAnalytics from '@/pages/hr/Analytics'
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -78,6 +80,8 @@ function App() {
         <Route path="jobs/create" element={<CreateJob />} />
         <Route path="jobs/:id/edit" element={<CreateJob />} />
         <Route path="company" element={<HRCompany />} />
+        <Route path="applications" element={<HRApplications />} />
+        <Route path="analytics" element={<HRAnalytics />} />
       </Route>
 
       {/* Fallback */}

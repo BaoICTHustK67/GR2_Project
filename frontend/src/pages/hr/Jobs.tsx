@@ -18,6 +18,8 @@ import {
   MoreVertical,
   Building2,
   AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 
 interface HRJob {
@@ -36,6 +38,11 @@ interface HRJob {
   }
 }
 
+interface MenuPosition {
+  top: number
+  right: number
+}
+
 export default function HRJobs() {
   const { user } = useAuthStore()
   const [jobs, setJobs] = useState<HRJob[]>([])
@@ -44,7 +51,23 @@ export default function HRJobs() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft' | 'closed'>('all')
   const [openMenu, setOpenMenu] = useState<number | null>(null)
+  const [menuPosition, setMenuPosition] = useState<MenuPosition>({ top: 0, right: 0 })
   const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const jobsPerPage = 10
+
+  const handleMenuClick = (jobId: number, button: HTMLButtonElement) => {
+    if (openMenu === jobId) {
+      setOpenMenu(null)
+    } else {
+      const rect = button.getBoundingClientRect()
+      setMenuPosition({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right
+      })
+      setOpenMenu(jobId)
+    }
+  }
 
   useEffect(() => {
     if (user?.companyId) {
@@ -119,6 +142,17 @@ export default function HRJobs() {
     const matchesStatus = statusFilter === 'all' || job.status === statusFilter
     return matchesSearch && matchesStatus
   })
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredJobs.length / jobsPerPage)
+  const startIndex = (currentPage - 1) * jobsPerPage
+  const endIndex = startIndex + jobsPerPage
+  const paginatedJobs = filteredJobs.slice(startIndex, endIndex)
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, statusFilter])
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
@@ -196,13 +230,13 @@ export default function HRJobs() {
         <div className="flex flex-col md:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
             <input
               type="text"
               placeholder="Search jobs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="input pl-10"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
 
@@ -246,136 +280,191 @@ export default function HRJobs() {
           </Link>
         </div>
       ) : (
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-800/50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Job
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Applicants
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Posted
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredJobs.map((job) => (
-                  <tr key={job.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                    <td className="px-6 py-4">
-                      <div>
-                        <Link
-                          to={`/jobs/${job.id}`}
-                          className="font-medium text-gray-900 dark:text-white hover:text-primary"
-                        >
-                          {job.title}
-                        </Link>
-                        <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
-                          {job.location && (
-                            <span className="flex items-center gap-1">
-                              <MapPin className="w-4 h-4" />
-                              {job.location}
-                            </span>
-                          )}
-                          {job.jobType && (
-                            <span className="flex items-center gap-1">
-                              <Briefcase className="w-4 h-4" />
-                              {job.jobType}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">{getStatusBadge(job.status)}</td>
-                    <td className="px-6 py-4">
-                      <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
-                        <Users className="w-4 h-4" />
-                        {job.applicantCount || 0}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {job.createdAt ? formatDate(job.createdAt) : 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="relative">
-                        <button
-                          onClick={() => setOpenMenu(openMenu === job.id ? null : job.id)}
-                          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                          disabled={deletingId === job.id}
-                        >
-                          {deletingId === job.id ? (
-                            <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
-                          ) : (
-                            <MoreVertical className="w-5 h-5 text-gray-500" />
-                          )}
-                        </button>
-
-                        {openMenu === job.id && (
-                          <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
-                            <Link
-                              to={`/hr/jobs/${job.id}/edit`}
-                              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                            >
-                              <Edit className="w-4 h-4" />
-                              Edit Job
-                            </Link>
-                            <Link
-                              to={`/jobs/${job.id}`}
-                              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                            >
-                              <Eye className="w-4 h-4" />
-                              View Job
-                            </Link>
-                            <button
-                              onClick={() => toggleJobStatus(job.id, job.status)}
-                              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full"
-                            >
-                              {job.status === 'published' ? (
-                                <>
-                                  <EyeOff className="w-4 h-4" />
-                                  Unpublish
-                                </>
-                              ) : (
-                                <>
-                                  <Eye className="w-4 h-4" />
-                                  Publish
-                                </>
-                              )}
-                            </button>
-                            <button
-                              onClick={() => deleteJob(job.id)}
-                              className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 w-full"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Delete Job
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </td>
+        <>
+          <div className="card">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-800/50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Job
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Applicants
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Posted
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {paginatedJobs.map((job) => (
+                    <tr key={job.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <td className="px-6 py-4">
+                        <div>
+                          <Link
+                            to={`/jobs/${job.id}`}
+                            className="font-medium text-gray-900 dark:text-white hover:text-primary"
+                          >
+                            {job.title}
+                          </Link>
+                          <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+                            {job.location && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-4 h-4" />
+                                {job.location}
+                              </span>
+                            )}
+                            {job.jobType && (
+                              <span className="flex items-center gap-1">
+                                <Briefcase className="w-4 h-4" />
+                                {job.jobType}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">{getStatusBadge(job.status)}</td>
+                      <td className="px-6 py-4">
+                        <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
+                          <Users className="w-4 h-4" />
+                          {job.applicantCount || 0}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {job.createdAt ? formatDate(job.createdAt) : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="relative inline-block">
+                          <button
+                            onClick={(e) => handleMenuClick(job.id, e.currentTarget)}
+                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                            disabled={deletingId === job.id}
+                          >
+                            {deletingId === job.id ? (
+                              <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+                            ) : (
+                              <MoreVertical className="w-5 h-5 text-gray-500" />
+                            )}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-      {/* Click outside to close menu */}
-      {openMenu && (
-        <div 
-          className="fixed inset-0 z-0" 
-          onClick={() => setOpenMenu(null)}
-        />
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <p className="text-sm text-gray-500">
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredJobs.length)} of {filteredJobs.length} jobs
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                        currentPage === page
+                          ? 'bg-primary text-white'
+                          : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Dropdown Menu Portal - Renders outside table to avoid clipping */}
+          {openMenu && (
+            <>
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setOpenMenu(null)}
+              />
+              <div 
+                className="fixed z-50 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700"
+                style={{
+                  top: menuPosition.top,
+                  right: menuPosition.right
+                }}
+              >
+                {(() => {
+                  const job = jobs.find(j => j.id === openMenu)
+                  if (!job) return null
+                  return (
+                    <>
+                      <Link
+                        to={`/hr/jobs/${job.id}/edit`}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg"
+                        onClick={() => setOpenMenu(null)}
+                      >
+                        <Edit className="w-4 h-4" />
+                        Edit Job
+                      </Link>
+                      <Link
+                        to={`/jobs/${job.id}`}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => setOpenMenu(null)}
+                      >
+                        <Eye className="w-4 h-4" />
+                        View Job
+                      </Link>
+                      <button
+                        onClick={() => toggleJobStatus(job.id, job.status)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full"
+                      >
+                        {job.status === 'published' ? (
+                          <>
+                            <EyeOff className="w-4 h-4" />
+                            Unpublish
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-4 h-4" />
+                            Publish
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => deleteJob(job.id)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 w-full rounded-b-lg"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete Job
+                      </button>
+                    </>
+                  )
+                })()}
+              </div>
+            </>
+          )}
+        </>
       )}
     </div>
   )
