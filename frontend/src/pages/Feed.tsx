@@ -20,7 +20,78 @@ import {
   Copy,
   Check,
   X,
+  AlertTriangle,
 } from 'lucide-react'
+
+// Confirmation Modal Component
+function ConfirmModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmText = 'Delete',
+  confirmVariant = 'danger',
+}: {
+  isOpen: boolean
+  onClose: () => void
+  onConfirm: () => void
+  title: string
+  message: string
+  confirmText?: string
+  confirmVariant?: 'danger' | 'primary'
+}) {
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+        <div className="flex items-center gap-4 mb-4">
+          <div className={`p-3 rounded-full ${
+            confirmVariant === 'danger' 
+              ? 'bg-red-100 dark:bg-red-900/30' 
+              : 'bg-primary/10'
+          }`}>
+            <AlertTriangle className={`w-6 h-6 ${
+              confirmVariant === 'danger' 
+                ? 'text-red-600 dark:text-red-400' 
+                : 'text-primary'
+            }`} />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              {title}
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {message}
+            </p>
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 mt-6">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              onConfirm()
+              onClose()
+            }}
+            className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors ${
+              confirmVariant === 'danger'
+                ? 'bg-red-600 hover:bg-red-700'
+                : 'bg-primary hover:bg-primary/90'
+            }`}
+          >
+            {confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function Feed() {
   const { user } = useAuthStore()
@@ -340,6 +411,7 @@ function PostCard({
   const [showRepostModal, setShowRepostModal] = useState(false)
   const [repostContent, setRepostContent] = useState('')
   const [copied, setCopied] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const isLiked = currentUserId ? post.likes.includes(currentUserId) : false
   const isOwner = currentUserId === post.author?.id
 
@@ -445,7 +517,7 @@ function PostCard({
                   </button>
                   <button
                     onClick={() => {
-                      onDelete(post.id)
+                      setShowDeleteModal(true)
                       setShowMenu(false)
                     }}
                     className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
@@ -624,6 +696,17 @@ function PostCard({
           </div>
         </div>
       )}
+
+      {/* Delete Post Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={() => onDelete(post.id)}
+        title="Delete Post"
+        message="Are you sure you want to delete this post? This action cannot be undone."
+        confirmText="Delete Post"
+        confirmVariant="danger"
+      />
     </>
   )
 }
@@ -636,6 +719,7 @@ function CommentsSection({ postId, comments: initialComments }: { postId: number
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null)
   const [editContent, setEditContent] = useState('')
+  const [deleteCommentId, setDeleteCommentId] = useState<number | null>(null)
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return
@@ -673,8 +757,6 @@ function CommentsSection({ postId, comments: initialComments }: { postId: number
   }
 
   const handleDeleteComment = async (commentId: number) => {
-    if (!confirm('Delete this comment?')) return
-
     try {
       const response = await postsAPI.deleteComment(postId, commentId)
       if (response.data.success) {
@@ -754,7 +836,7 @@ function CommentsSection({ postId, comments: initialComments }: { postId: number
                       <Edit2 className="w-3 h-3 text-gray-500" />
                     </button>
                     <button
-                      onClick={() => handleDeleteComment(comment.id)}
+                      onClick={() => setDeleteCommentId(comment.id)}
                       className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
                       title="Delete"
                     >
@@ -807,6 +889,21 @@ function CommentsSection({ postId, comments: initialComments }: { postId: number
           </div>
         </div>
       ))}
+
+      {/* Delete Comment Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteCommentId !== null}
+        onClose={() => setDeleteCommentId(null)}
+        onConfirm={() => {
+          if (deleteCommentId) {
+            handleDeleteComment(deleteCommentId)
+          }
+        }}
+        title="Delete Comment"
+        message="Are you sure you want to delete this comment? This action cannot be undone."
+        confirmText="Delete Comment"
+        confirmVariant="danger"
+      />
     </div>
   )
 }
