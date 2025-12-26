@@ -16,6 +16,7 @@ import Interviews from '@/pages/Interviews'
 import Profile from '@/pages/Profile'
 import Companies from '@/pages/Companies'
 import CompanyDetail from '@/pages/CompanyDetail'
+import PostDetail from '@/pages/PostDetail'
 import HRDashboard from '@/pages/hr/Dashboard'
 import HRJobs from '@/pages/hr/Jobs'
 import CreateJob from '@/pages/hr/CreateJob'
@@ -59,6 +60,7 @@ function App() {
       {/* Main App Routes */}
       <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route path="/" element={<Feed />} />
+        <Route path="/posts/:id" element={<PostDetail />} />
         <Route path="/jobs" element={<Jobs />} />
         <Route path="/jobs/:id" element={<JobDetail />} />
         <Route path="/interviews" element={<Interviews />} />

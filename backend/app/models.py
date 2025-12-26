@@ -266,8 +266,8 @@ class BlogPost(db.Model):
             'comments': [comment.to_dict() for comment in self.comments.order_by(Comment.created_at.asc())],
             'repostsCount': self.reposts.count(),
             'originalPost': self.original_post.to_dict() if self.original_post else None,
-            'timestamp': self.created_at.isoformat() if self.created_at else None,
-            'createdAt': self.created_at.isoformat() if self.created_at else None,
+            'timestamp': self.created_at.isoformat() + 'Z' if self.created_at else None,
+            'createdAt': self.created_at.isoformat() + 'Z' if self.created_at else None,
         }
 
 
@@ -288,7 +288,7 @@ class Comment(db.Model):
             'postId': self.post_id,
             'author': self.author.to_dict() if self.author else None,
             'content': self.content,
-            'timestamp': self.created_at.isoformat() if self.created_at else None,
+            'timestamp': self.created_at.isoformat() + 'Z' if self.created_at else None,
         }
 
 
