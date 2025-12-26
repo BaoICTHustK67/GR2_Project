@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from app import db
 from app.models import Job, Company, Application, User
+from app.routes.notifications import notify_company_followers_new_job, notify_application_status_change
 
 bp = Blueprint('jobs', __name__, url_prefix='/api/jobs')
 
@@ -101,6 +102,14 @@ def create_job():
     try:
         db.session.add(job)
         db.session.commit()
+        
+        # Notify company followers about the new job if it's published
+        if job.status == 'published':
+            company = Company.query.get(user.company_id)
+            if company:
+                notify_company_followers_new_job(company, job)
+                db.session.commit()
+        
         return jsonify({
             'success': True,
             'message': 'Job created successfully',
@@ -334,10 +343,17 @@ def update_application_status(app_id):
             'message': 'Invalid status'
         }), 400
     
+    old_status = application.status
     application.status = new_status
     
     try:
         db.session.commit()
+        
+        # Notify applicant about status change
+        if old_status != new_status:
+            notify_application_status_change(application, old_status, new_status)
+            db.session.commit()
+        
         return jsonify({
             'success': True,
             'message': 'Application status updated',

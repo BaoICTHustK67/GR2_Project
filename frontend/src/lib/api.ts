@@ -144,6 +144,8 @@ export const companiesAPI = {
   createCompany: (data: any) => api.post('/companies', data),
   updateCompany: (id: number, data: any) => api.put(`/companies/${id}`, data),
   toggleFollow: (id: number) => api.post(`/companies/${id}/follow`),
+  followCompany: (id: number) => api.post(`/companies/${id}/follow`),
+  unfollowCompany: (id: number) => api.post(`/companies/${id}/follow`),
   getCompanyJobs: (id: number) => api.get(`/companies/${id}/jobs`),
   getCompanyFollowers: (id: number) => api.get(`/companies/${id}/followers`),
   getMyCompany: () => api.get('/companies/my-company'),
@@ -170,4 +172,14 @@ export const interviewsAPI = {
   getFeedback: (interviewId: number) => api.get(`/interviews/${interviewId}/feedback`),
   createFeedback: (interviewId: number, data: any) =>
     api.post(`/interviews/${interviewId}/feedback`, data),
+}
+
+// Notifications API
+export const notificationsAPI = {
+  getNotifications: (params?: { unread?: boolean; limit?: number }) =>
+    api.get('/notifications', { params }),
+  getUnreadCount: () => api.get('/notifications/unread-count'),
+  markAsRead: (id: number) => api.post(`/notifications/${id}/read`),
+  markAllAsRead: () => api.post('/notifications/mark-all-read'),
+  deleteNotification: (id: number) => api.delete(`/notifications/${id}`),
 }

@@ -227,9 +227,40 @@ class Application(db.Model):
             'cvLink': self.cv_link,
             'coverLetter': self.cover_letter,
             'status': self.status,
-            'createdAt': self.created_at.isoformat() if self.created_at else None,
+            'createdAt': self.created_at.isoformat() + 'Z' if self.created_at else None,
             'job': self.job.to_dict() if self.job else None,
             'applicant': self.applicant.to_dict() if self.applicant else None,
+        }
+
+
+class Notification(db.Model):
+    """Notification model for user notifications"""
+    __tablename__ = 'notifications'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    type = db.Column(db.String(50), nullable=False)  # new_job, application_status, etc.
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    link = db.Column(db.String(500))  # Link to navigate when clicked
+    is_read = db.Column(db.Boolean, default=False)
+    data = db.Column(db.JSON)  # Additional data (job_id, company_id, etc.)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', backref=db.backref('notifications', lazy='dynamic'))
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'userId': self.user_id,
+            'type': self.type,
+            'title': self.title,
+            'message': self.message,
+            'link': self.link,
+            'isRead': self.is_read,
+            'data': self.data,
+            'createdAt': self.created_at.isoformat() + 'Z' if self.created_at else None,
         }
 
 

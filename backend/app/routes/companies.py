@@ -3,7 +3,7 @@ Companies Routes
 """
 from datetime import datetime
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
 from app import db
 from app.models import Company, User, Job, CompanyJoinRequest
 
@@ -53,9 +53,22 @@ def get_company(company_id):
             'message': 'Company not found'
         }), 404
     
+    # Check if current user is following this company
+    is_following = False
+    try:
+        verify_jwt_in_request(optional=True)
+        user_id = get_jwt_identity()
+        if user_id:
+            user = User.query.get(int(user_id))
+            if user and user in company.followers:
+                is_following = True
+    except Exception:
+        pass
+    
     return jsonify({
         'success': True,
-        'company': company.to_dict()
+        'company': company.to_dict(),
+        'isFollowing': is_following
     })
 
 

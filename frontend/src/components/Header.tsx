@@ -6,7 +6,6 @@ import {
   Briefcase, 
   Users, 
   MessageSquare, 
-  Bell,
   Moon,
   Sun,
   Menu,
@@ -15,6 +14,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import UserMenu from './UserMenu'
+import NotificationBell from './NotificationBell'
 
 const navLinks = [
   { href: '/', label: 'Feed', icon: Home },
@@ -80,10 +80,7 @@ export default function Header() {
           {/* Right Section */}
           <div className="flex items-center gap-2">
             {/* Notifications */}
-            <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 relative">
-              <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
-            </button>
+            <NotificationBell />
 
             {/* Dark Mode Toggle */}
             <button

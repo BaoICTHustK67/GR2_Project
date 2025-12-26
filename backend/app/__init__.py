@@ -82,7 +82,7 @@ def create_app(config_name='development'):
         print(f"[DEBUG] {request.method} {request.path} - Auth: {auth_header[:50] if auth_header else 'None'}...")
     
     # Register blueprints
-    from app.routes import auth, users, jobs, blogs, companies, interviews
+    from app.routes import auth, users, jobs, blogs, companies, interviews, notifications
     
     app.register_blueprint(auth.bp)
     app.register_blueprint(users.bp)
@@ -90,6 +90,7 @@ def create_app(config_name='development'):
     app.register_blueprint(blogs.bp)
     app.register_blueprint(companies.bp)
     app.register_blueprint(interviews.bp)
+    app.register_blueprint(notifications.bp)
     
     # Create database tables
     with app.app_context():

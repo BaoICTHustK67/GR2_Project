@@ -19,6 +19,7 @@ import {
   UserCheck,
   ExternalLink,
 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export default function CompanyDetail() {
   const { id } = useParams<{ id: string }>()
@@ -28,6 +29,7 @@ export default function CompanyDetail() {
   const [isFollowing, setIsFollowing] = useState(false)
   const [isFollowLoading, setIsFollowLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'about' | 'jobs'>('about')
+  const [followersCount, setFollowersCount] = useState(0)
 
   useEffect(() => {
     if (id) {
@@ -42,6 +44,7 @@ export default function CompanyDetail() {
       if (response.data.success) {
         setCompany(response.data.company)
         setIsFollowing(response.data.isFollowing || false)
+        setFollowersCount(response.data.company.followersCount || 0)
       }
     } catch (error) {
       console.error('Error fetching company:', error)
@@ -65,14 +68,18 @@ export default function CompanyDetail() {
     if (!id) return
     setIsFollowLoading(true)
     try {
-      if (isFollowing) {
-        await companiesAPI.unfollowCompany(Number(id))
-        setIsFollowing(false)
-      } else {
-        await companiesAPI.followCompany(Number(id))
-        setIsFollowing(true)
+      const response = await companiesAPI.toggleFollow(Number(id))
+      if (response.data.success) {
+        setIsFollowing(response.data.following)
+        setFollowersCount(response.data.followersCount)
+        if (response.data.following) {
+          toast.success(`You are now following ${company?.name}`)
+        } else {
+          toast.success(`You unfollowed ${company?.name}`)
+        }
       }
     } catch (error) {
+      toast.error('Failed to update follow status')
       console.error('Error toggling follow:', error)
     } finally {
       setIsFollowLoading(false)
@@ -177,6 +184,11 @@ export default function CompanyDetail() {
 
               {/* Stats */}
               <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-500">
+                {/* Followers Count */}
+                <span className="flex items-center gap-1 font-medium text-gray-700 dark:text-gray-300">
+                  <UserCheck className="w-4 h-4 text-primary" />
+                  {followersCount} {followersCount === 1 ? 'Follower' : 'Followers'}
+                </span>
                 {company.location && (
                   <span className="flex items-center gap-1">
                     <MapPin className="w-4 h-4" />
