@@ -471,17 +471,108 @@ def get_hr_recent_applications():
     
     result = []
     for app in applications:
+        applicant = app.applicant
         result.append({
             'id': app.id,
-            'applicantName': app.full_name or (app.applicant.name if app.applicant else 'Unknown'),
+            'applicantName': app.full_name or (applicant.name if applicant else 'Unknown'),
             'applicantEmail': app.email,
+            'applicantPhone': app.phone,
+            'applicantImage': applicant.image if applicant else None,
+            'applicantBio': applicant.bio if applicant else None,
+            'applicantHeadline': applicant.headline if applicant else None,
+            'applicantLocation': applicant.location if applicant else None,
+            'applicantId': applicant.id if applicant else None,
+            'cvLink': app.cv_link,
+            'coverLetter': app.cover_letter,
             'jobId': app.job_id,
             'jobTitle': app.job.title if app.job else 'Unknown',
+            'jobLocation': app.job.location if app.job else None,
+            'jobType': app.job.job_type if app.job else None,
             'status': app.status,
-            'appliedAt': app.created_at.isoformat() if app.created_at else None
+            'appliedAt': app.created_at.isoformat() + 'Z' if app.created_at else None
         })
     
     return jsonify({
         'success': True,
         'applications': result
+    })
+
+
+@bp.route('/applications/<int:app_id>', methods=['GET'])
+@jwt_required()
+def get_application_details(app_id):
+    """Get full application details including applicant profile"""
+    user_id = int(get_jwt_identity())
+    user = User.query.get(user_id)
+    
+    application = Application.query.get(app_id)
+    
+    if not application:
+        return jsonify({
+            'success': False,
+            'message': 'Application not found'
+        }), 404
+    
+    job = application.job
+    
+    # Check permission - must be HR of the company or job creator
+    if job.created_by != user_id and user.user_role not in ['hr', 'admin']:
+        return jsonify({
+            'success': False,
+            'message': 'You do not have permission to view this application'
+        }), 403
+    
+    if user.company_id and job.company_id != user.company_id:
+        return jsonify({
+            'success': False,
+            'message': 'You do not have permission to view this application'
+        }), 403
+    
+    applicant = application.applicant
+    
+    # Get applicant's education, experience, skills, projects
+    applicant_data = None
+    if applicant:
+        from app.models import Education, Experience, Skill, Project
+        
+        educations = Education.query.filter_by(user_id=applicant.id).order_by(Education.start_date.desc()).all()
+        experiences = Experience.query.filter_by(user_id=applicant.id).order_by(Experience.start_date.desc()).all()
+        skills = Skill.query.filter_by(user_id=applicant.id).all()
+        projects = Project.query.filter_by(user_id=applicant.id).all()
+        
+        applicant_data = {
+            'id': applicant.id,
+            'name': applicant.name,
+            'email': applicant.email,
+            'image': applicant.image,
+            'coverImage': applicant.cover_image,
+            'bio': applicant.bio,
+            'headline': applicant.headline,
+            'location': applicant.location,
+            'educations': [e.to_dict() for e in educations],
+            'experiences': [e.to_dict() for e in experiences],
+            'skills': [s.to_dict() for s in skills],
+            'projects': [p.to_dict() for p in projects],
+        }
+    
+    return jsonify({
+        'success': True,
+        'application': {
+            'id': application.id,
+            'fullName': application.full_name,
+            'email': application.email,
+            'phone': application.phone,
+            'cvLink': application.cv_link,
+            'coverLetter': application.cover_letter,
+            'status': application.status,
+            'appliedAt': application.created_at.isoformat() + 'Z' if application.created_at else None,
+            'job': {
+                'id': job.id,
+                'title': job.title,
+                'location': job.location,
+                'jobType': job.job_type,
+                'company': job.company.to_dict() if job.company else None
+            },
+            'applicant': applicant_data
+        }
     })
