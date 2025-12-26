@@ -19,6 +19,9 @@ import {
   ArrowLeft,
   ExternalLink,
   Video,
+  AlertCircle,
+  Eye,
+  XCircle,
 } from 'lucide-react'
 
 const applySchema = z.object({
@@ -31,6 +34,12 @@ const applySchema = z.object({
 
 type ApplyForm = z.infer<typeof applySchema>
 
+interface UserApplication {
+  id: number
+  status: string
+  appliedAt: string | null
+}
+
 export default function JobDetail() {
   const { id } = useParams<{ id: string }>()
   const [job, setJob] = useState<Job | null>(null)
@@ -38,6 +47,7 @@ export default function JobDetail() {
   const [showApplyModal, setShowApplyModal] = useState(false)
   const [isApplying, setIsApplying] = useState(false)
   const [hasApplied, setHasApplied] = useState(false)
+  const [userApplication, setUserApplication] = useState<UserApplication | null>(null)
   const [isCreatingInterview, setIsCreatingInterview] = useState(false)
 
   const {
@@ -60,6 +70,11 @@ export default function JobDetail() {
       const response = await jobsAPI.getJob(Number(id))
       if (response.data.success) {
         setJob(response.data.job)
+        // Check if user has already applied
+        if (response.data.userApplication) {
+          setHasApplied(true)
+          setUserApplication(response.data.userApplication)
+        }
       }
     } catch (error) {
       console.error('Error fetching job:', error)
@@ -79,6 +94,14 @@ export default function JobDetail() {
         toast.success('Application submitted successfully!')
         setShowApplyModal(false)
         setHasApplied(true)
+        // Set the application info from response
+        if (response.data.application) {
+          setUserApplication({
+            id: response.data.application.id,
+            status: response.data.application.status || 'pending',
+            appliedAt: response.data.application.createdAt || new Date().toISOString()
+          })
+        }
         reset()
       } else {
         toast.error(response.data.message || 'Failed to submit application')
@@ -197,17 +220,60 @@ export default function JobDetail() {
           </div>
         </div>
 
+        {/* Application Status Card */}
+        {userApplication && (
+          <div className={`mt-4 p-4 rounded-lg border ${
+            userApplication.status === 'accepted' 
+              ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
+              : userApplication.status === 'rejected'
+              ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+              : userApplication.status === 'reviewed'
+              ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+              : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
+          }`}>
+            <div className="flex items-center gap-3">
+              {userApplication.status === 'accepted' ? (
+                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+              ) : userApplication.status === 'rejected' ? (
+                <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+              ) : userApplication.status === 'reviewed' ? (
+                <Eye className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              ) : (
+                <AlertCircle className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+              )}
+              <div>
+                <p className={`font-medium ${
+                  userApplication.status === 'accepted' 
+                    ? 'text-green-800 dark:text-green-300' 
+                    : userApplication.status === 'rejected'
+                    ? 'text-red-800 dark:text-red-300'
+                    : userApplication.status === 'reviewed'
+                    ? 'text-blue-800 dark:text-blue-300'
+                    : 'text-yellow-800 dark:text-yellow-300'
+                }`}>
+                  Application Status: <span className="capitalize">{userApplication.status}</span>
+                </p>
+                {userApplication.appliedAt && (
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Applied on {formatDate(userApplication.appliedAt)}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="flex gap-3 mt-6">
           <button
             onClick={() => setShowApplyModal(true)}
             disabled={hasApplied}
-            className="btn btn-primary flex-1"
+            className={`btn flex-1 ${hasApplied ? 'btn-ghost cursor-not-allowed opacity-75' : 'btn-primary'}`}
           >
             {hasApplied ? (
               <>
                 <CheckCircle className="w-5 h-5" />
-                Applied
+                Already Applied
               </>
             ) : (
               'Apply Now'

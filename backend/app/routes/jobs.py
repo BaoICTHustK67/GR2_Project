@@ -2,7 +2,7 @@
 Jobs Routes
 """
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt, verify_jwt_in_request
 from app import db
 from app.models import Job, Company, Application, User
 from app.routes.notifications import notify_company_followers_new_job, notify_application_status_change
@@ -56,9 +56,31 @@ def get_job(job_id):
             'message': 'Job not found'
         }), 404
     
+    job_data = job.to_dict()
+    
+    # Check if user is authenticated and has applied to this job
+    user_application = None
+    try:
+        verify_jwt_in_request(optional=True)
+        user_id = get_jwt_identity()
+        if user_id:
+            application = Application.query.filter_by(
+                job_id=job_id,
+                user_id=int(user_id)
+            ).first()
+            if application:
+                user_application = {
+                    'id': application.id,
+                    'status': application.status,
+                    'appliedAt': application.created_at.isoformat() + 'Z' if application.created_at else None
+                }
+    except Exception:
+        pass
+    
     return jsonify({
         'success': True,
-        'job': job.to_dict()
+        'job': job_data,
+        'userApplication': user_application
     })
 
 
