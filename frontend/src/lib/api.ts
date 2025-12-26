@@ -74,6 +74,19 @@ export const usersAPI = {
   getUser: (id: number) => api.get(`/users/${id}`),
   getUserById: (id: number) => api.get(`/users/${id}`),
   getProfile: () => api.get('/auth/me'),
+  updateProfile: (data: Partial<{
+    name: string
+    bio: string
+    location: string
+    headline: string
+    phone: string
+    website: string
+    linkedin: string
+    github: string
+    image: string
+    coverImage: string
+    darkMode: boolean
+  }>) => api.put('/auth/update-profile', data),
   getUserEducation: (id: number) => api.get(`/users/${id}/education`),
   getUserExperience: (id: number) => api.get(`/users/${id}/experience`),
   getUserSkills: (id: number) => api.get(`/users/${id}/skills`),

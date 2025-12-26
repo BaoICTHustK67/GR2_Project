@@ -158,6 +158,14 @@ def update_profile():
         user.location = data['location']
     if 'headline' in data:
         user.headline = data['headline']
+    if 'phone' in data:
+        user.phone = data['phone']
+    if 'website' in data:
+        user.website = data['website']
+    if 'linkedin' in data:
+        user.linkedin = data['linkedin']
+    if 'github' in data:
+        user.github = data['github']
     if 'image' in data:
         user.image = data['image']
     if 'coverImage' in data:

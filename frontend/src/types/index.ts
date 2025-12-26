@@ -10,9 +10,18 @@ export interface User {
   bio?: string
   location?: string
   headline?: string
+  phone?: string
+  website?: string
+  linkedin?: string
+  github?: string
   darkMode?: boolean
   companyId?: number
   createdAt?: string
+  // Profile sections (loaded separately)
+  experience?: Experience[]
+  education?: Education[]
+  skills?: Skill[]
+  projects?: Project[]
 }
 
 // Company types

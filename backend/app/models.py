@@ -40,6 +40,10 @@ class User(db.Model):
     bio = db.Column(db.Text)
     location = db.Column(db.String(100))
     headline = db.Column(db.String(200))
+    phone = db.Column(db.String(20))
+    website = db.Column(db.String(500))
+    linkedin = db.Column(db.String(500))
+    github = db.Column(db.String(500))
     dark_mode = db.Column(db.Boolean, default=False)
     company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -73,6 +77,10 @@ class User(db.Model):
             'bio': self.bio,
             'location': self.location,
             'headline': self.headline,
+            'phone': self.phone,
+            'website': self.website,
+            'linkedin': self.linkedin,
+            'github': self.github,
             'darkMode': self.dark_mode,
             'companyId': self.company_id,
             'createdAt': self.created_at.isoformat() if self.created_at else None,
