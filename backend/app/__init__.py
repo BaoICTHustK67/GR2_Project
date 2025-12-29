@@ -18,18 +18,18 @@ jwt = JWTManager()
 def create_app(config_name='development'):
     """Application factory function"""
     app = Flask(__name__)
-    
+
     # Disable strict slashes to prevent 308 redirects that strip auth headers
     app.url_map.strict_slashes = False
-    
+
     # Load configuration
     app.config.from_object(config[config_name])
-    
+
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
-    
+
     # JWT error handlers
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_payload):
@@ -38,7 +38,7 @@ def create_app(config_name='development'):
             'message': 'Token has expired',
             'error': 'token_expired'
         }), 401
-    
+
     @jwt.invalid_token_loader
     def invalid_token_callback(error):
         print(f"[DEBUG] Invalid token error: {error}")
@@ -47,7 +47,7 @@ def create_app(config_name='development'):
             'message': f'Invalid token: {error}',
             'error': 'invalid_token'
         }), 401
-    
+
     @jwt.unauthorized_loader
     def missing_token_callback(error):
         print(f"[DEBUG] Unauthorized error: {error}")
@@ -56,7 +56,7 @@ def create_app(config_name='development'):
             'message': f'Authorization token is missing: {error}',
             'error': 'authorization_required'
         }), 401
-    
+
     @jwt.revoked_token_loader
     def revoked_token_callback(jwt_header, jwt_payload):
         return jsonify({
@@ -64,7 +64,7 @@ def create_app(config_name='development'):
             'message': 'Token has been revoked',
             'error': 'token_revoked'
         }), 401
-    
+
     # Enable CORS
     CORS(app, resources={
         r"/api/*": {
@@ -74,16 +74,17 @@ def create_app(config_name='development'):
             "supports_credentials": True
         }
     })
-    
+
     # Debug: Log incoming requests
     @app.before_request
     def log_request():
         auth_header = request.headers.get('Authorization', 'No Auth Header')
         print(f"[DEBUG] {request.method} {request.path} - Auth: {auth_header[:50] if auth_header else 'None'}...")
-    
-    # Register blueprints
+
+    # Register blueprints (per-module strategy)
     from app.routes import auth, users, jobs, blogs, companies, interviews, notifications
-    
+    from app.routes import messages
+
     app.register_blueprint(auth.bp)
     app.register_blueprint(users.bp)
     app.register_blueprint(jobs.bp)
@@ -91,14 +92,15 @@ def create_app(config_name='development'):
     app.register_blueprint(companies.bp)
     app.register_blueprint(interviews.bp)
     app.register_blueprint(notifications.bp)
-    
+    app.register_blueprint(messages.bp)
+
     # Create database tables
     with app.app_context():
         db.create_all()
-    
+
     # Health check route
     @app.route('/api/health')
     def health_check():
         return {'status': 'healthy', 'message': 'HustConnect API is running'}
-    
+
     return app

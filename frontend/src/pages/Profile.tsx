@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
 import { usersAPI } from '@/lib/api'
+import { connectionsApi } from '@/lib/connectionsApi'
+import { chatApi } from '@/lib/chatApi'
 import { useAuthStore } from '@/store/authStore'
 import type { User, Education, Experience, Project } from '@/types'
 import { getInitials } from '@/lib/utils'
@@ -28,6 +30,8 @@ import {
   X,
   Save,
   Camera,
+  MessageSquare,
+  Clock,
 } from 'lucide-react'
 
 // Form Schemas
@@ -89,7 +93,8 @@ export default function Profile() {
   const [profile, setProfile] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isConnecting, setIsConnecting] = useState(false)
-  const [isConnected, setIsConnected] = useState(false)
+  
+  const navigate = useNavigate()
   
   // Edit modal states
   const [editingSection, setEditingSection] = useState<string | null>(null)
@@ -128,7 +133,6 @@ export default function Profile() {
         const response = await usersAPI.getUser(Number(id))
         if (response.data.success) {
           const userData = response.data.user
-          setIsConnected(response.data.isConnected || false)
           // Fetch additional profile data
           const [eduRes, expRes, skillRes, projRes] = await Promise.all([
             usersAPI.getUserEducation(Number(id)).catch(() => ({ data: { education: [] } })),
@@ -156,16 +160,42 @@ export default function Profile() {
   }
 
   const handleConnect = async () => {
-    if (!id) return
+    if (!profile) return
     setIsConnecting(true)
     try {
-      setIsConnected(true)
-      toast.success('Connection request sent!')
+      if (profile.connectionStatus === 'pending') {
+         // If we are the recipient, accept? Or if we are requester...
+         // Actually the button logic should separate these cases. 
+         // If status is 'pending' and isRequester is true, button might be disabled or "Cancel".
+         // If isRequester is false, button is "Accept".
+         if (!profile.isRequester) {
+            await connectionsApi.respond(profile.id, 'accept')
+            setProfile(prev => prev ? { ...prev, connectionStatus: 'accepted' } : null)
+            toast.success('Connection accepted!')
+         }
+      } else if (profile.connectionStatus === 'accepted') {
+         // handle disconnect? or ignore since we show "Connected"
+      } else {
+         await connectionsApi.sendRequest(profile.id)
+         setProfile(prev => prev ? { ...prev, connectionStatus: 'pending', isRequester: true } : null)
+         toast.success('Connection request sent!')
+      }
     } catch (error) {
       console.error('Error connecting:', error)
-      toast.error('Failed to send connection request')
+      toast.error('Failed to update connection')
     } finally {
       setIsConnecting(false)
+    }
+  }
+
+  const handleMessage = async () => {
+    if (!profile) return
+    try {
+      const { conversation } = await chatApi.createConversation([profile.id])
+      navigate(`/messages?conversationId=${conversation.id}`)
+    } catch (error) {
+      console.error('Error messaging:', error)
+      toast.error('Failed to start conversation')
     }
   }
 
@@ -396,6 +426,11 @@ export default function Profile() {
                       {profile.headline}
                     </p>
                   )}
+                  {profile.connectionsCount !== undefined && (
+                    <Link to="/network" className="text-primary hover:underline text-sm font-medium mt-1 block">
+                      {profile.connectionsCount} connections
+                    </Link>
+                  )}
                   {profile.location && (
                     <p className="flex items-center gap-1 text-gray-500 mt-2">
                       <MapPin className="w-4 h-4" />
@@ -415,25 +450,66 @@ export default function Profile() {
                       Edit Profile
                     </button>
                   ) : (
-                    <button
-                      onClick={handleConnect}
-                      disabled={isConnecting || isConnected}
-                      className="btn btn-primary"
-                    >
-                      {isConnected ? (
-                        <>
+                    <>
+                      <button
+                        onClick={handleMessage}
+                        className="btn btn-outline"
+                        title="Message"
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        Message
+                      </button>
+                      
+                      {profile.connectionStatus === 'accepted' ? (
+                        <button
+                          disabled
+                          className="btn btn-primary"
+                        >
                           <UserCheck className="w-4 h-4" />
                           Connected
-                        </>
-                      ) : isConnecting ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        </button>
+                      ) : profile.connectionStatus === 'pending' ? (
+                        profile.isRequester ? (
+                          <button
+                            disabled
+                            className="btn btn-outline"
+                          >
+                            <Clock className="w-4 h-4" />
+                            Pending
+                          </button>
+                        ) : (
+                          <button
+                            onClick={handleConnect}
+                            disabled={isConnecting}
+                            className="btn btn-primary"
+                          >
+                            {isConnecting ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <>
+                                <UserCheck className="w-4 h-4" />
+                                Accept
+                              </>
+                            )}
+                          </button>
+                        )
                       ) : (
-                        <>
-                          <UserPlus className="w-4 h-4" />
-                          Connect
-                        </>
+                        <button
+                          onClick={handleConnect}
+                          disabled={isConnecting}
+                          className="btn btn-primary"
+                        >
+                          {isConnecting ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              <UserPlus className="w-4 h-4" />
+                              Connect
+                            </>
+                          )}
+                        </button>
                       )}
-                    </button>
+                    </>
                   )}
                 </div>
               </div>

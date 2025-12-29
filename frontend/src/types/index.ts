@@ -22,6 +22,9 @@ export interface User {
   education?: Education[]
   skills?: Skill[]
   projects?: Project[]
+  connectionStatus?: 'none' | 'pending' | 'accepted' | 'rejected'
+  isRequester?: boolean
+  connectionsCount?: number
 }
 
 // Company types

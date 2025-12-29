@@ -16,7 +16,9 @@ user_connections = db.Table('user_connections',
     db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
     db.Column('connected_user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
     db.Column('status', db.String(20), default='pending'),  # pending, accepted, rejected
-    db.Column('created_at', db.DateTime, default=datetime.utcnow)
+    db.Column('created_at', db.DateTime, default=datetime.utcnow),
+    db.Column('reviewed_by', db.Integer, db.ForeignKey('users.id'), nullable=True),
+    db.Column('reviewed_at', db.DateTime, nullable=True)
 )
 
 company_followers = db.Table('company_followers',
@@ -28,7 +30,7 @@ company_followers = db.Table('company_followers',
 class User(db.Model):
     """User model"""
     __tablename__ = 'users'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
@@ -48,7 +50,7 @@ class User(db.Model):
     company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # Relationships
     posts = db.relationship('BlogPost', backref='author', lazy='dynamic', foreign_keys='BlogPost.author_id')
     comments = db.relationship('Comment', backref='author', lazy='dynamic')
@@ -58,13 +60,13 @@ class User(db.Model):
     projects = db.relationship('Project', backref='user', lazy='dynamic', cascade='all, delete-orphan')
     applications = db.relationship('Application', backref='applicant', lazy='dynamic')
     interviews = db.relationship('Interview', backref='user', lazy='dynamic')
-    
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
-    
+
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
-    
+
     def to_dict(self, include_private=False):
         data = {
             'id': self.id,
@@ -91,7 +93,7 @@ class User(db.Model):
 class Company(db.Model):
     """Company model"""
     __tablename__ = 'companies'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
@@ -104,13 +106,13 @@ class Company(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Admin/creator of the company
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # Relationships
     jobs = db.relationship('Job', backref='company', lazy='dynamic')
     hr_members = db.relationship('User', backref='company', lazy='dynamic', foreign_keys='User.company_id')
     followers = db.relationship('User', secondary=company_followers, backref='followed_companies')
     join_requests = db.relationship('CompanyJoinRequest', backref='company', lazy='dynamic', cascade='all, delete-orphan')
-    
+
     def to_dict(self, include_hr_count=False):
         data = {
             'id': self.id,
@@ -134,7 +136,7 @@ class Company(db.Model):
 class CompanyJoinRequest(db.Model):
     """Join request for HR users to join a company"""
     __tablename__ = 'company_join_requests'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
@@ -143,11 +145,11 @@ class CompanyJoinRequest(db.Model):
     reviewed_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     reviewed_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+
     # Relationships
     requester = db.relationship('User', foreign_keys=[user_id], backref='join_requests')
     reviewer = db.relationship('User', foreign_keys=[reviewed_by])
-    
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -166,7 +168,7 @@ class CompanyJoinRequest(db.Model):
 class Job(db.Model):
     """Job posting model"""
     __tablename__ = 'jobs'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=False)
@@ -183,10 +185,10 @@ class Job(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # Relationships
     applications = db.relationship('Application', backref='job', lazy='dynamic', cascade='all, delete-orphan')
-    
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -211,7 +213,7 @@ class Job(db.Model):
 class Application(db.Model):
     """Job application model"""
     __tablename__ = 'applications'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     job_id = db.Column(db.Integer, db.ForeignKey('jobs.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -223,7 +225,7 @@ class Application(db.Model):
     status = db.Column(db.String(20), default='pending')  # pending, reviewed, accepted, rejected
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -244,7 +246,7 @@ class Application(db.Model):
 class Notification(db.Model):
     """Notification model for user notifications"""
     __tablename__ = 'notifications'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     type = db.Column(db.String(50), nullable=False)  # new_job, application_status, etc.
@@ -254,10 +256,10 @@ class Notification(db.Model):
     is_read = db.Column(db.Boolean, default=False)
     data = db.Column(db.JSON)  # Additional data (job_id, company_id, etc.)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+
     # Relationships
     user = db.relationship('User', backref=db.backref('notifications', lazy='dynamic'))
-    
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -275,7 +277,7 @@ class Notification(db.Model):
 class BlogPost(db.Model):
     """Blog post model"""
     __tablename__ = 'blog_posts'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
@@ -285,12 +287,12 @@ class BlogPost(db.Model):
     original_post_id = db.Column(db.Integer, db.ForeignKey('blog_posts.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # Relationships
     comments = db.relationship('Comment', backref='post', lazy='dynamic', cascade='all, delete-orphan')
     likes = db.relationship('User', secondary=post_likes, backref='liked_posts')
     reposts = db.relationship('BlogPost', backref=db.backref('original_post', remote_side=[id]), lazy='dynamic')
-    
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -313,14 +315,14 @@ class BlogPost(db.Model):
 class Comment(db.Model):
     """Comment model for blog posts"""
     __tablename__ = 'comments'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     post_id = db.Column(db.Integer, db.ForeignKey('blog_posts.id'), nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -334,7 +336,7 @@ class Comment(db.Model):
 class Interview(db.Model):
     """Interview model"""
     __tablename__ = 'interviews'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     job_id = db.Column(db.Integer, db.ForeignKey('jobs.id'), nullable=True)
@@ -346,10 +348,10 @@ class Interview(db.Model):
     finalized = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # Relationships
     feedback = db.relationship('Feedback', backref='interview', lazy='dynamic', cascade='all, delete-orphan')
-    
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -368,7 +370,7 @@ class Interview(db.Model):
 class Feedback(db.Model):
     """Interview feedback model"""
     __tablename__ = 'feedback'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     interview_id = db.Column(db.Integer, db.ForeignKey('interviews.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -378,7 +380,7 @@ class Feedback(db.Model):
     areas_for_improvement = db.Column(db.JSON, default=list)
     final_assessment = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -396,7 +398,7 @@ class Feedback(db.Model):
 class Education(db.Model):
     """User education model"""
     __tablename__ = 'educations'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     school = db.Column(db.String(200), nullable=False)
@@ -405,7 +407,7 @@ class Education(db.Model):
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
     description = db.Column(db.Text)
-    
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -421,7 +423,7 @@ class Education(db.Model):
 class Experience(db.Model):
     """User work experience model"""
     __tablename__ = 'experiences'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     title = db.Column(db.String(200), nullable=False)
@@ -431,7 +433,7 @@ class Experience(db.Model):
     end_date = db.Column(db.Date)
     is_current = db.Column(db.Boolean, default=False)
     description = db.Column(db.Text)
-    
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -448,12 +450,12 @@ class Experience(db.Model):
 class Skill(db.Model):
     """User skill model"""
     __tablename__ = 'skills'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     level = db.Column(db.String(50))  # beginner, intermediate, advanced, expert
-    
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -465,7 +467,7 @@ class Skill(db.Model):
 class Project(db.Model):
     """User project model"""
     __tablename__ = 'projects'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     name = db.Column(db.String(200), nullable=False)
@@ -474,7 +476,7 @@ class Project(db.Model):
     technologies = db.Column(db.JSON, default=list)
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
-    
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -484,4 +486,67 @@ class Project(db.Model):
             'technologies': self.technologies or [],
             'startDate': self.start_date.isoformat() if self.start_date else None,
             'endDate': self.end_date.isoformat() if self.end_date else None,
+        }
+
+class Conversation(db.Model):
+    """Conversation model"""
+    __tablename__ = 'conversations'
+
+    id = db.Column(db.Integer, primary_key=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    participants = db.relationship('User', secondary='conversation_participants', backref='conversations')
+    messages = db.relationship('Message', backref='conversation', lazy='dynamic', cascade='all, delete-orphan')
+
+    def to_dict(self, current_user_id):
+        other_participant = None
+        for p in self.participants:
+            if p.id != current_user_id:
+                other_participant = p
+                break
+
+        last_message = self.messages.order_by(Message.created_at.desc()).first()
+
+        return {
+            'id': self.id,
+            'participants': [p.to_dict() for p in self.participants],
+            'otherParticipant': other_participant.to_dict() if other_participant else None,
+            'lastMessage': last_message.to_dict() if last_message else None,
+            'updatedAt': self.updated_at.isoformat() + 'Z' if self.updated_at else None,
+        }
+
+
+class ConversationParticipant(db.Model):
+    """Association table for users and conversations"""
+    __tablename__ = 'conversation_participants'
+
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), primary_key=True)
+
+
+class Message(db.Model):
+    """Message model"""
+    __tablename__ = 'messages'
+
+    id = db.Column(db.Integer, primary_key=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    sender = db.relationship('User', backref='sent_messages')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'conversationId': self.conversation_id,
+            'senderId': self.sender_id,
+            'content': self.content,
+            'isRead': self.is_read,
+            'sender': self.sender.to_dict() if self.sender else None,
+            'timestamp': self.created_at.isoformat() + 'Z' if self.created_at else None,
         }

@@ -17,6 +17,8 @@ import Profile from '@/pages/Profile'
 import Companies from '@/pages/Companies'
 import CompanyDetail from '@/pages/CompanyDetail'
 import PostDetail from '@/pages/PostDetail'
+import MessagesPage from '@/pages/Messages'
+import Networking from '@/pages/Networking'
 import HRDashboard from '@/pages/hr/Dashboard'
 import HRJobs from '@/pages/hr/Jobs'
 import CreateJob from '@/pages/hr/CreateJob'
@@ -27,26 +29,26 @@ import HRAnalytics from '@/pages/hr/Analytics'
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore()
-  
+
   if (!isAuthenticated) {
     return <Navigate to="/sign-in" replace />
   }
-  
+
   return <>{children}</>
 }
 
 // HR Protected Route
 function HRRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user } = useAuthStore()
-  
+
   if (!isAuthenticated) {
     return <Navigate to="/sign-in" replace />
   }
-  
+
   if (user?.userRole !== 'hr' && user?.userRole !== 'admin') {
     return <Navigate to="/" replace />
   }
-  
+
   return <>{children}</>
 }
 
@@ -70,6 +72,8 @@ function App() {
         <Route path="/profile/:id" element={<Profile />} />
         <Route path="/companies" element={<Companies />} />
         <Route path="/companies/:id" element={<CompanyDetail />} />
+        <Route path="/network" element={<Networking />} />
+        <Route path="/messages" element={<MessagesPage />} />
       </Route>
 
       {/* HR Routes */}

@@ -22,9 +22,24 @@ def get_my_profile():
             'message': 'User not found'
         }), 404
     
+    # Get connection count
+    from app.models import user_connections
+    from sqlalchemy import or_
+    
+    connections_count = db.session.query(user_connections).filter(
+        or_(
+            user_connections.c.user_id == user_id,
+            user_connections.c.connected_user_id == user_id
+        ),
+        user_connections.c.status == 'accepted'
+    ).count()
+    
+    user_data = user.to_dict()
+    user_data['connectionsCount'] = connections_count
+
     return jsonify({
         'success': True,
-        'user': user.to_dict()
+        'user': user_data
     })
 
 
@@ -59,6 +74,7 @@ def get_users():
 @jwt_required()
 def get_user(user_id):
     """Get a specific user by ID"""
+    current_user_id = int(get_jwt_identity())
     user = User.query.get(user_id)
     
     if not user:
@@ -67,9 +83,48 @@ def get_user(user_id):
             'message': 'User not found'
         }), 404
     
+    # Check connection status
+    from app.models import user_connections
+    from sqlalchemy import and_, or_
+    
+    connection = db.session.query(user_connections).filter(
+        or_(
+            and_(
+                user_connections.c.user_id == current_user_id,
+                user_connections.c.connected_user_id == user_id
+            ),
+            and_(
+                user_connections.c.user_id == user_id,
+                user_connections.c.connected_user_id == current_user_id
+            )
+        )
+    ).first()
+    
+    status = 'none'
+    is_requester = False
+    
+    if connection:
+        status = connection.status
+        if connection.user_id == current_user_id:
+            is_requester = True
+            
+    # Get connection count
+    connections_count = db.session.query(user_connections).filter(
+        or_(
+            user_connections.c.user_id == user_id,
+            user_connections.c.connected_user_id == user_id
+        ),
+        user_connections.c.status == 'accepted'
+    ).count()
+            
+    response_data = user.to_dict()
+    response_data['connectionStatus'] = status
+    response_data['isRequester'] = is_requester
+    response_data['connectionsCount'] = connections_count
+    
     return jsonify({
         'success': True,
-        'user': user.to_dict()
+        'user': response_data
     })
 
 

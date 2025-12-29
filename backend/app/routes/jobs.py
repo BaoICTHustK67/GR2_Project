@@ -45,7 +45,7 @@ def get_jobs():
     })
 
 
-@bp.route('/<int:job_id>', methods=['GET'])
+@bp.route('/jobs/<int:job_id>', methods=['GET'])
 def get_job(job_id):
     """Get a specific job by ID"""
     job = Job.query.get(job_id)
