@@ -7,6 +7,7 @@ from app import db
 from flask import Blueprint
 from app.models import Conversation, Message, User, user_connections
 from sqlalchemy import or_, and_
+from app import socketio
 
 bp = Blueprint('messages', __name__, url_prefix='/api')
 
@@ -162,7 +163,11 @@ def send_message(conversation_id):
     db.session.add(message)
     db.session.commit()
     
-    # TODO: Emit WebSocket event for real-time updates
+    # Emit WebSocket event for real-time updates
+    socketio.emit('new_message', {
+        'conversationId': conversation_id,
+        'message': message.to_dict()
+    }, room=f"conversation_{conversation_id}")
     
     return jsonify({
         'success': True,

@@ -31,15 +31,9 @@ export default function ChatBox() {
   // It shouldn't be a round button. It should be a bar.
   
   useEffect(() => {
-    // Poll for list updates if open
-    let interval: any
     if (isOpen) {
       fetchConversations(true)
-      interval = setInterval(() => {
-        fetchConversations(true)
-      }, 3000)
     }
-    return () => clearInterval(interval)
   }, [isOpen, fetchConversations])
 
   const location = useLocation()

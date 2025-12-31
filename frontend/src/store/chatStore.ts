@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { chatApi } from '@/lib/chatApi'
 import type { Conversation, Message } from '@/types/chat'
+import { io, Socket } from 'socket.io-client'
 
 type ChatState = {
   conversations: Conversation[]
@@ -9,12 +10,18 @@ type ChatState = {
   isLoadingConversations: boolean
   isLoadingMessages: boolean
   error: string | null
+  socket: Socket | null
 
   setActiveConversation: (id: number | null) => void
   fetchConversations: (silent?: boolean) => Promise<void>
   fetchMessages: (conversationId: number, silent?: boolean) => Promise<void>
   sendMessage: (conversationId: number, content: string) => Promise<void>
   startConversationWithUser: (userId: number) => Promise<number>
+  
+  connectSocket: () => void
+  disconnectSocket: () => void
+  joinConversation: (id: number) => void
+  leaveConversation: (id: number) => void
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -25,10 +32,62 @@ export const useChatStore = create<ChatState>((set, get) => ({
   isLoadingMessages: false,
   error: null,
 
-  setActiveConversation: (id) => {
-    set({ activeConversationId: id })
-    if (id != null) get().fetchMessages(id)
-  },
+  socket: null,
+  
+   setActiveConversation: (id) => {
+     set({ activeConversationId: id })
+     if (id != null) {
+        get().fetchMessages(id)
+        get().joinConversation(id)
+     }
+   },
+
+   joinConversation: (conversationId) => {
+      const socket = get().socket
+      if (socket) {
+          socket.emit('join', { conversationId })
+      }
+   },
+
+   leaveConversation: (conversationId) => {
+      const socket = get().socket
+      if (socket) {
+          socket.emit('leave', { conversationId })
+      }
+   },
+  
+   connectSocket: () => {
+     if (get().socket) return
+     
+     const socket = io('http://localhost:5000') // Adjust URL if needed
+     
+     socket.on('connect', () => {
+         console.log('Socket connected')
+     })
+     
+     socket.on('new_message', (data: { conversationId: number, message: Message }) => {
+         const { conversationId, message } = data
+         set((s) => ({
+             messagesByConversation: {
+                 ...s.messagesByConversation,
+                 [conversationId]: [...(s.messagesByConversation[conversationId] || []), message]
+             }
+         }))
+         // Also define that we should update conversation list snippet?
+         // For now, let's trigger a light fetchConversations to update the list order/snippet
+         get().fetchConversations(true)
+     })
+     
+     set({ socket })
+   },
+
+   disconnectSocket: () => {
+     const socket = get().socket
+     if (socket) {
+         socket.disconnect()
+         set({ socket: null })
+     }
+   },
 
   fetchConversations: async (silent = false) => {
     try {
@@ -64,15 +123,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     try {
       set({ error: null })
-      const res = await chatApi.sendMessage(conversationId, trimmed)
-      set((s) => ({
-        messagesByConversation: {
-          ...s.messagesByConversation,
-          [conversationId]: [...(s.messagesByConversation[conversationId] || []), res.message],
-        },
-      }))
-      // refresh conversation list for lastMessage/ordering
-      get().fetchConversations()
+      // We still use REST API to send, backend emits event back to us (and others)
+      // Optimistic update is possible but let's rely on the socket event for consistency first
+      await chatApi.sendMessage(conversationId, trimmed)
+      // No need to manually append here if socket event handles it, 
+      // BUT for latency smoothing we could?
+      // actually, the 'new_message' event will come back and append it. 
+      // If we append here AND there, we get duplicates unless we filter by ID.
+      // Let's rely on socket event.
+      
     } catch (e: any) {
       set({ error: e?.message || 'Failed to send message' })
       throw e

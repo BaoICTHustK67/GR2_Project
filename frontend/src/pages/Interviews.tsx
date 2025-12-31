@@ -7,7 +7,6 @@ import {
   Video,
   Clock,
   CheckCircle,
-  XCircle,
   PlayCircle,
   Loader2,
   Star,
@@ -204,13 +203,13 @@ function InterviewCard({
 
           <p className="text-gray-600 dark:text-gray-400 mb-3">
             {interview.type.charAt(0).toUpperCase() + interview.type.slice(1)} •{' '}
-            {interview.level.charAt(0).toUpperCase() + interview.level.slice(1)} Level
+            {(interview.level || 'entry').charAt(0).toUpperCase() + (interview.level || 'entry').slice(1)} Level
           </p>
 
           <div className="flex items-center gap-4 text-sm text-gray-500">
             <span className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
-              Created {formatDate(interview.createdAt)}
+              Created {interview.createdAt ? formatDate(interview.createdAt) : '-'}
             </span>
             {interview.completedAt && (
               <span className="flex items-center gap-1">
@@ -243,9 +242,9 @@ function InterviewCard({
       </div>
 
       {/* Tech Stack */}
-      {interview.techStack && interview.techStack.length > 0 && (
+      {interview.techstack && interview.techstack.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-4">
-          {interview.techStack.slice(0, 5).map((tech) => (
+          {interview.techstack.slice(0, 5).map((tech) => (
             <span
               key={tech}
               className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
@@ -253,9 +252,9 @@ function InterviewCard({
               {tech}
             </span>
           ))}
-          {interview.techStack.length > 5 && (
+          {interview.techstack.length > 5 && (
             <span className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500">
-              +{interview.techStack.length - 5} more
+              +{interview.techstack.length - 5} more
             </span>
           )}
         </div>

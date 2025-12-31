@@ -14,6 +14,10 @@ db = SQLAlchemy()
 migrate = Migrate()
 jwt = JWTManager()
 
+# Initialize SocketIO
+from flask_socketio import SocketIO
+socketio = SocketIO(cors_allowed_origins="*") # CORS handled by SocketIO separately
+
 
 def create_app(config_name='development'):
     """Application factory function"""
@@ -29,6 +33,10 @@ def create_app(config_name='development'):
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+    socketio.init_app(app)
+
+    # Import socket events to ensure they are registered
+    from app import socket_events
 
     # JWT error handlers
     @jwt.expired_token_loader

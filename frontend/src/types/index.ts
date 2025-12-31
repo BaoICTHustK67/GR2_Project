@@ -115,6 +115,10 @@ export interface Interview {
   coverImage?: string
   finalized: boolean
   createdAt?: string
+  // UI-specific or missing backend fields, added for build compatibility
+  completedAt?: string
+  level?: string
+  feedback?: Feedback[]
 }
 
 export interface Feedback {
@@ -127,6 +131,7 @@ export interface Feedback {
   areasForImprovement: string[]
   finalAssessment?: string
   createdAt?: string
+  score?: number // Added for compatibility
 }
 
 // Profile types

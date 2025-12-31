@@ -177,6 +177,7 @@ export const companiesAPI = {
 // Interviews API
 export const interviewsAPI = {
   getInterviews: () => api.get('/interviews'),
+  getMyInterviews: () => api.get('/interviews'), // Alias for build compatibility
   getLatestInterviews: (limit?: number) => api.get('/interviews/latest', { params: { limit } }),
   getInterview: (id: number) => api.get(`/interviews/${id}`),
   createInterview: (data: any) => api.post('/interviews', data),

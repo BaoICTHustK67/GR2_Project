@@ -20,12 +20,6 @@ export default function MessagesPage() {
 
   useEffect(() => {
     fetchConversations()
-
-    const interval = setInterval(() => {
-      fetchConversations(true)
-    }, 3000)
-
-    return () => clearInterval(interval)
   }, [fetchConversations])
 
   useEffect(() => {

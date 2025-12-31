@@ -18,19 +18,13 @@ export default function ChatWindow({ isInPopover, onClose }: Props) {
     messagesByConversation,
     isLoadingMessages,
     sendMessage,
-    fetchMessages,
   } = useChatStore()
 
-  // Polling for new messages
+  // Polling for new messages removed in favor of Socket.IO
   useEffect(() => {
     if (!activeConversationId) return
-
-    const interval = setInterval(() => {
-      fetchMessages(activeConversationId, true)
-    }, 3000)
-
-    return () => clearInterval(interval)
-  }, [activeConversationId, fetchMessages])
+    // Initial fetch handled by setActiveConversation in store
+  }, [activeConversationId])
 
   const activeConversation = useMemo(
     () => conversations.find((c) => c.id === activeConversationId) || null,
@@ -42,10 +36,12 @@ export default function ChatWindow({ isInPopover, onClose }: Props) {
   const bottomRef = useRef<HTMLDivElement | null>(null)
   // Ref to track if it's the first load to force scroll bottom
   const isFirstLoadRef = useRef(true)
+  const lastMessageIdRef = useRef<number | null>(null)
 
   useEffect(() => {
     // Reset first load ref when conversation changes
     isFirstLoadRef.current = true
+    lastMessageIdRef.current = null
   }, [activeConversationId])
 
   useEffect(() => {
@@ -54,42 +50,44 @@ export default function ChatWindow({ isInPopover, onClose }: Props) {
     const container = bottomRef.current.parentElement
     if (!container) return
 
-    // Logic:
-    // 1. If first load, scroll to bottom immediately
-    // 2. If user is sending a message (last message is mine), scroll to bottom
-    // 3. If user is already near bottom (within 100px), scroll to bottom on new message
-    // 4. Otherwise (reading history), don't scroll
-    
     const lastMessage = messages[messages.length - 1]
+    const lastMessageId = lastMessage?.id
+
+    // If no messages, nothing to do
+    if (!lastMessage) return
+
+    // Check if the last message has actually changed
+    const isNewMessage = lastMessageId !== lastMessageIdRef.current
+
+    if (isNewMessage) {
+        lastMessageIdRef.current = lastMessageId
+    }
+
     const isMyMessage = lastMessage?.senderId === user?.id
     
-    // Check if near bottom before update (approximation)
-    // We can't check 'before' update easily here as this effect runs 'after'.
-    // But we can check if the current scroll position is close to the bottom *minus* the new content height?
-    // Actually simplicity: if it's my message or first load, scroll. 
-    // If it's a new incoming message, ideally we check scroll position but polling might make that tricky.
-    // Let's stick to "if my message or first load" for robust start, and maybe "always" if it's fresh?
-    
-    // Actually, we can check scrollTop + clientHeight vs scrollHeight.
-    // Since this runs after render, scrollHeight is already updated. 
-    // So we might be "far" from bottom now.
+    // Logic:
+    // 1. If first load, scroll to bottom immediately
+    // 2. If it is a NEW message (id changed):
+    //    a. If it's my message, scroll to bottom
+    //    b. If it's an incoming message, only scroll if we were already close to bottom
     
     if (isFirstLoadRef.current) {
         bottomRef.current.scrollIntoView()
         isFirstLoadRef.current = false
-    } else if (isMyMessage) {
-        bottomRef.current.scrollIntoView({ behavior: 'smooth' })
-    } else {
-        // For incoming messages, we only auto-scroll if we were relatively close to the bottom
-        // Since we can't easily know "previous" scroll, we can try a heuristic:
-        // If the *distance* to bottom is small enough (e.g. less than 500px), just scroll.
-        // This keeps it "sticky".
-         const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight
-         if (distanceToBottom < 500) {
-             bottomRef.current.scrollIntoView({ behavior: 'smooth' })
-         }
+    } else if (isNewMessage) {
+        if (isMyMessage) {
+            bottomRef.current.scrollIntoView({ behavior: 'smooth' })
+        } else {
+             // For incoming messages, we only auto-scroll if we were relatively close to the bottom
+             const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight
+             if (distanceToBottom < 500) {
+                 bottomRef.current.scrollIntoView({ behavior: 'smooth' })
+             }
+        }
     }
-  }, [messages, user?.id]) // Removed activeConversationId from dependency to handle it in separate effect logic check
+    // If it's not a new message (just a re-render or polling same data), do NOT scroll.
+    
+  }, [messages, user?.id])
 
   if (!activeConversationId || !activeConversation) {
     return (
