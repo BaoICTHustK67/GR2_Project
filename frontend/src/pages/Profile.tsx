@@ -9,7 +9,7 @@ import { connectionsApi } from '@/lib/connectionsApi'
 import { chatApi } from '@/lib/chatApi'
 import { useAuthStore } from '@/store/authStore'
 import type { User, Education, Experience, Project } from '@/types'
-import { getInitials } from '@/lib/utils'
+import { getInitials, formatMonthYear } from '@/lib/utils'
 import {
   MapPin,
   Mail,
@@ -783,7 +783,7 @@ export default function Profile() {
                       </h3>
                       <p className="text-gray-600 dark:text-gray-400">{exp.company}</p>
                       <p className="text-sm text-gray-500">
-                        {exp.startDate} - {exp.isCurrent ? 'Present' : exp.endDate || 'Present'}
+                        {formatMonthYear(exp.startDate)} - {exp.isCurrent ? 'Present' : formatMonthYear(exp.endDate) || 'Present'}
                         {exp.location && ` · ${exp.location}`}
                       </p>
                     </div>
@@ -857,7 +857,7 @@ export default function Profile() {
                         </p>
                       )}
                       <p className="text-sm text-gray-500">
-                        {edu.startDate} - {edu.endDate || 'Present'}
+                        {formatMonthYear(edu.startDate)} - {formatMonthYear(edu.endDate) || 'Present'}
                       </p>
                     </div>
                     {isOwnProfile && (
@@ -996,6 +996,11 @@ export default function Profile() {
                       </span>
                     ))}
                   </div>
+                )}
+                {(project.startDate || project.endDate) && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    {formatMonthYear(project.startDate)} - {formatMonthYear(project.endDate) || 'Present'}
+                  </p>
                 )}
                 {project.url && (
                   <a

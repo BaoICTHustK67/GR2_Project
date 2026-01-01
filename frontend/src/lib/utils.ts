@@ -10,6 +10,15 @@ export function formatDate(date: string | Date) {
   return format(new Date(date), 'MMM d, yyyy')
 }
 
+export function formatMonthYear(dateString?: string | null) {
+  if (!dateString) return ''
+  try {
+    return format(new Date(dateString), 'MMM yyyy')
+  } catch (e) {
+    return dateString
+  }
+}
+
 export function formatRelativeTime(date: string | Date) {
   return formatDistanceToNow(new Date(date), { addSuffix: true })
 }

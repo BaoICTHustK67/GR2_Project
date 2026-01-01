@@ -71,7 +71,7 @@ export default function Companies() {
         <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
           {/* Search Input */}
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
             <input
               type="text"
               placeholder="Search companies..."
@@ -203,10 +203,10 @@ function CompanyCard({ company }: { company: Company }) {
             {company.location}
           </span>
         )}
-        {company.companySize && (
+        {company.size && (
           <span className="flex items-center gap-1">
             <Users className="w-4 h-4" />
-            {company.companySize}
+            {company.size}
           </span>
         )}
       </div>

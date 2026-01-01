@@ -13,6 +13,19 @@ from datetime import datetime
 bp = Blueprint('users', __name__, url_prefix='/api/users')
 
 
+def parse_date(date_str):
+    """Parse ISO date string to datetime.date object"""
+    if not date_str:
+        return None
+    try:
+        # Front-end sends ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ)
+        if 'T' in date_str:
+            return datetime.strptime(date_str.split('T')[0], '%Y-%m-%d').date()
+        return datetime.strptime(date_str, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        return None
+
+
 @bp.route('/profile', methods=['GET'])
 @jwt_required()
 def get_my_profile():
@@ -162,6 +175,8 @@ def add_education():
         school=data.get('school'),
         degree=data.get('degree'),
         field_of_study=data.get('fieldOfStudy'),
+        start_date=parse_date(data.get('startDate')),
+        end_date=parse_date(data.get('endDate')),
         description=data.get('description')
     )
     
@@ -202,6 +217,10 @@ def update_education(edu_id):
         education.degree = data['degree']
     if 'fieldOfStudy' in data:
         education.field_of_study = data['fieldOfStudy']
+    if 'startDate' in data:
+        education.start_date = parse_date(data['startDate'])
+    if 'endDate' in data:
+        education.end_date = parse_date(data['endDate'])
     if 'description' in data:
         education.description = data['description']
     
@@ -278,6 +297,8 @@ def add_experience():
         title=data.get('title'),
         company=data.get('company'),
         location=data.get('location'),
+        start_date=parse_date(data.get('startDate')),
+        end_date=parse_date(data.get('endDate')),
         is_current=data.get('isCurrent', False),
         description=data.get('description')
     )
@@ -319,6 +340,10 @@ def update_experience(exp_id):
         experience.company = data['company']
     if 'location' in data:
         experience.location = data['location']
+    if 'startDate' in data:
+        experience.start_date = parse_date(data['startDate'])
+    if 'endDate' in data:
+        experience.end_date = parse_date(data['endDate'])
     if 'isCurrent' in data:
         experience.is_current = data['isCurrent']
     if 'description' in data:
@@ -472,7 +497,9 @@ def add_project():
         name=data.get('name'),
         description=data.get('description'),
         url=data.get('url'),
-        technologies=data.get('technologies', [])
+        technologies=data.get('technologies', []),
+        start_date=parse_date(data.get('startDate')),
+        end_date=parse_date(data.get('endDate'))
     )
     
     try:
@@ -514,6 +541,10 @@ def update_project(project_id):
         project.url = data['url']
     if 'technologies' in data:
         project.technologies = data['technologies']
+    if 'startDate' in data:
+        project.start_date = parse_date(data['startDate'])
+    if 'endDate' in data:
+        project.end_date = parse_date(data['endDate'])
     
     try:
         db.session.commit()

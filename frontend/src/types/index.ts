@@ -39,6 +39,7 @@ export interface Company {
   location?: string
   founded?: number
   followersCount?: number
+  jobCount?: number
   createdAt?: string
 }
 
