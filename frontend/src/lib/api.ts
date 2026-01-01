@@ -104,6 +104,7 @@ export const usersAPI = {
   deleteProject: (id: number) => api.delete(`/users/projects/${id}`),
   getSuggestions: (limit?: number) => api.get('/users/suggestions', { params: { limit } }),
   scanProfile: (role: string, level: string) => api.post('/users/scan-profile', { role, level }),
+  enhanceProfile: (section: string, content: string) => api.post('/users/enhance-profile', { section, content }),
 }
 
 // Jobs API

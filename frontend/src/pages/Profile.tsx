@@ -38,6 +38,7 @@ import {
   TrendingUp,
   Target,
 } from 'lucide-react'
+import { AIEnhancementDialog } from '@/components/profile/AIEnhancementDialog'
 
 // Form Schemas
 const aboutSchema = z.object({
@@ -1085,7 +1086,7 @@ function AboutModal({ profile, onSave, onClose, isSaving }: {
   onClose: () => void
   isSaving: boolean 
 }) {
-  const { register, handleSubmit, formState: { errors } } = useForm<AboutForm>({
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<AboutForm>({
     resolver: zodResolver(aboutSchema),
     defaultValues: {
       name: profile.name,
@@ -1100,6 +1101,11 @@ function AboutModal({ profile, onSave, onClose, isSaving }: {
       coverImage: profile.coverImage || '',
     },
   })
+
+  const [aiDialog, setAiDialog] = useState<{ section: 'headline' | 'about', content: string } | null>(null)
+  
+  const headline = watch('headline')
+  const bio = watch('bio')
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1122,11 +1128,27 @@ function AboutModal({ profile, onSave, onClose, isSaving }: {
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Headline</label>
               <input {...register('headline')} className="input w-full" placeholder="e.g. Software Engineer at Company" />
+              <button
+                type="button"
+                onClick={() => setAiDialog({ section: 'headline', content: headline || '' })}
+                className="mt-1 flex items-center gap-1.5 text-xs text-purple-600 hover:text-purple-700 font-medium transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Write with AI
+              </button>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bio</label>
               <textarea {...register('bio')} className="input w-full" rows={4} placeholder="Tell us about yourself..." />
+              <button
+                type="button"
+                onClick={() => setAiDialog({ section: 'about', content: bio || '' })}
+                className="mt-1 flex items-center gap-1.5 text-xs text-purple-600 hover:text-purple-700 font-medium transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Write with AI
+              </button>
             </div>
 
             <div>
@@ -1175,6 +1197,17 @@ function AboutModal({ profile, onSave, onClose, isSaving }: {
               </button>
             </div>
           </form>
+          {aiDialog && (
+            <AIEnhancementDialog
+              section={aiDialog.section}
+              currentContent={aiDialog.content}
+              onSave={(suggested) => {
+                setValue(aiDialog.section === 'headline' ? 'headline' : 'bio', suggested)
+                setAiDialog(null)
+              }}
+              onClose={() => setAiDialog(null)}
+            />
+          )}
         </div>
       </div>
     </div>
@@ -1187,7 +1220,7 @@ function ExperienceModal({ experience, onSave, onClose, isSaving }: {
   onClose: () => void
   isSaving: boolean 
 }) {
-  const { register, handleSubmit, formState: { errors }, watch } = useForm<ExperienceForm>({
+  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<ExperienceForm>({
     resolver: zodResolver(experienceSchema),
     defaultValues: {
       title: experience?.title || '',
@@ -1201,6 +1234,9 @@ function ExperienceModal({ experience, onSave, onClose, isSaving }: {
   })
 
   const isCurrent = watch('isCurrent')
+  const description = watch('description') || ''
+  const wordCount = description.trim().split(/\s+/).filter(Boolean).length
+  const [aiDialog, setAiDialog] = useState<{ section: 'experience', content: string } | null>(null)
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1252,6 +1288,26 @@ function ExperienceModal({ experience, onSave, onClose, isSaving }: {
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
               <textarea {...register('description')} className="input w-full" rows={4} placeholder="Describe your responsibilities and achievements..." />
+              <div className="mt-1 flex items-center justify-between">
+                <button
+                  type="button"
+                  disabled={wordCount < 20}
+                  onClick={() => setAiDialog({ section: 'experience', content: description })}
+                  className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
+                    wordCount < 20 
+                      ? 'text-gray-400 cursor-not-allowed' 
+                      : 'text-purple-600 hover:text-purple-700'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Rewrite with AI
+                </button>
+                {wordCount < 20 && (
+                  <span className="text-[10px] text-gray-500 italic">
+                    Add {20 - wordCount} more words to unlock AI assistance
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="flex gap-3 pt-4">
@@ -1262,6 +1318,17 @@ function ExperienceModal({ experience, onSave, onClose, isSaving }: {
               </button>
             </div>
           </form>
+          {aiDialog && (
+            <AIEnhancementDialog
+              section="experience"
+              currentContent={aiDialog.content}
+              onSave={(suggested) => {
+                setValue('description', suggested)
+                setAiDialog(null)
+              }}
+              onClose={() => setAiDialog(null)}
+            />
+          )}
         </div>
       </div>
     </div>
@@ -1274,7 +1341,7 @@ function EducationModal({ education, onSave, onClose, isSaving }: {
   onClose: () => void
   isSaving: boolean 
 }) {
-  const { register, handleSubmit, formState: { errors } } = useForm<EducationForm>({
+  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<EducationForm>({
     resolver: zodResolver(educationSchema),
     defaultValues: {
       school: education?.school || '',
@@ -1285,6 +1352,9 @@ function EducationModal({ education, onSave, onClose, isSaving }: {
       description: education?.description || '',
     },
   })
+
+  const [aiDialog, setAiDialog] = useState<{ section: 'education', content: string } | null>(null)
+  const description = watch('description') || ''
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1330,6 +1400,14 @@ function EducationModal({ education, onSave, onClose, isSaving }: {
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
               <textarea {...register('description')} className="input w-full" rows={4} placeholder="Activities, achievements, etc." />
+              <button
+                type="button"
+                onClick={() => setAiDialog({ section: 'education', content: description })}
+                className="mt-1 flex items-center gap-1.5 text-xs text-purple-600 hover:text-purple-700 font-medium transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Rewrite with AI
+              </button>
             </div>
 
             <div className="flex gap-3 pt-4">
@@ -1340,6 +1418,18 @@ function EducationModal({ education, onSave, onClose, isSaving }: {
               </button>
             </div>
           </form>
+
+          {aiDialog && (
+            <AIEnhancementDialog
+              section="education"
+              currentContent={aiDialog.content}
+              onSave={(suggested) => {
+                setValue('description', suggested)
+                setAiDialog(null)
+              }}
+              onClose={() => setAiDialog(null)}
+            />
+          )}
         </div>
       </div>
     </div>
@@ -1404,7 +1494,7 @@ function ProjectModal({ project, onSave, onClose, isSaving }: {
   onClose: () => void
   isSaving: boolean 
 }) {
-  const { register, handleSubmit, formState: { errors } } = useForm<ProjectForm>({
+  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<ProjectForm>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
       name: project?.name || '',
@@ -1415,6 +1505,9 @@ function ProjectModal({ project, onSave, onClose, isSaving }: {
       endDate: project?.endDate || '',
     },
   })
+
+  const [aiDialog, setAiDialog] = useState<{ section: 'project', content: string } | null>(null)
+  const description = watch('description') || ''
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1439,6 +1532,14 @@ function ProjectModal({ project, onSave, onClose, isSaving }: {
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
               <textarea {...register('description')} className="input w-full" rows={4} placeholder="Describe your project..." />
+              <button
+                type="button"
+                onClick={() => setAiDialog({ section: 'project', content: description })}
+                className="mt-1 flex items-center gap-1.5 text-xs text-purple-600 hover:text-purple-700 font-medium transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Rewrite with AI
+              </button>
             </div>
 
             <div>
@@ -1471,6 +1572,18 @@ function ProjectModal({ project, onSave, onClose, isSaving }: {
               </button>
             </div>
           </form>
+
+          {aiDialog && (
+            <AIEnhancementDialog
+              section="project"
+              currentContent={aiDialog.content}
+              onSave={(suggested) => {
+                setValue('description', suggested)
+                setAiDialog(null)
+              }}
+              onClose={() => setAiDialog(null)}
+            />
+          )}
         </div>
       </div>
     </div>

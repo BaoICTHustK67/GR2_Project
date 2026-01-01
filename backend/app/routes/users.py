@@ -613,6 +613,63 @@ def clean_json(text):
     clean = text.replace('```json', '').replace('```', '')
     return clean.strip()
 
+@bp.route('/enhance-profile', methods=['POST'])
+@jwt_required()
+def enhance_profile():
+    """Enhance profile section using AI"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        
+        if not user:
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+            
+        data = request.get_json()
+        section = data.get('section')  # 'headline', 'about', 'experience'
+        content = data.get('content')
+        
+        if not section or not content:
+            return jsonify({'success': False, 'message': 'Section and content are required'}), 400
+            
+        # Configure Gemini
+        api_key = os.getenv('GEMINI_API_KEY')
+        if not api_key:
+             return jsonify({'success': False, 'error': 'Server configuration error: Gemini API Key missing'}), 500
+        
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        prompts = {
+            'headline': f"Rewrite the following professional headline to be more catchy and impactful for a LinkedIn-style profile. Keep it concise. Current headline: {content}",
+            'about': f"Enhance the following 'About' or 'Bio' section for a professional profile. Make it engaging, highlight key strengths, and keep a professional tone. Current content: {content}",
+            'experience': f"Improve the following job experience description to be more achievement-oriented and professional. Use action verbs and focus on impact. Current description: {content}",
+            'education': f"Refine the following education description to highlight relevant coursework, honors, or activities in a professional manner. Current description: {content}",
+            'project': f"Enhance the following project description to clearly articulate the problem, your solution, and the technologies used. Focus on impact and technical complexity. Current description: {content}"
+        }
+        
+        prompt = prompts.get(section)
+        if not prompt:
+            return jsonify({'success': False, 'message': 'Invalid section'}), 400
+
+        try:
+            response = model.generate_content(prompt)
+            suggested_text = response.text.strip()
+            # Clean up potential markdown formatting if Gemini adds it
+            if suggested_text.startswith('"') and suggested_text.endswith('"'):
+                suggested_text = suggested_text[1:-1]
+        except Exception as e:
+            print(f"Gemini API Error: {e}")
+            return jsonify({'success': False, 'error': 'Failed to generate suggestion using AI'}), 500
+            
+        return jsonify({
+            'success': True,
+            'suggestion': suggested_text
+        }), 200
+        
+    except Exception as e:
+        print(f"Profile Enhancement Error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @bp.route('/scan-profile', methods=['POST'])
 @jwt_required()
 def scan_profile():
