@@ -28,6 +28,12 @@ import HRAnalytics from '@/pages/hr/Analytics'
 import InterviewSetup from '@/pages/InterviewSetup'
 import InterviewSession from '@/pages/InterviewSession'
 import InterviewFeedback from '@/pages/InterviewFeedback'
+import AdminLayout from '@/layouts/AdminLayout'
+import AdminDashboard from '@/pages/admin/Dashboard'
+import AdminUsers from '@/pages/admin/Users'
+import AdminJobs from '@/pages/admin/Jobs'
+import AdminInterviews from '@/pages/admin/Interviews'
+import AdminBlogs from '@/pages/admin/Blogs'
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -49,6 +55,21 @@ function HRRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (user?.userRole !== 'hr' && user?.userRole !== 'admin') {
+    return <Navigate to="/" replace />
+  }
+
+  return <>{children}</>
+}
+
+// Admin Protected Route
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, user } = useAuthStore()
+
+  if (!isAuthenticated) {
+    return <Navigate to="/sign-in" replace />
+  }
+
+  if (user?.userRole !== 'admin') {
     return <Navigate to="/" replace />
   }
 
@@ -92,6 +113,17 @@ function App() {
         <Route path="company" element={<HRCompany />} />
         <Route path="applications" element={<HRApplications />} />
         <Route path="analytics" element={<HRAnalytics />} />
+      </Route>
+
+      {/* Admin Routes */}
+      <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+        <Route index element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="jobs" element={<AdminJobs />} />
+        <Route path="interviews" element={<AdminInterviews />} />
+        <Route path="blogs" element={<AdminBlogs />} />
+        <Route path="settings" element={<div>Admin Settings - Coming Soon</div>} />
       </Route>
 
       {/* Fallback */}

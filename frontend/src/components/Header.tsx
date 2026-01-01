@@ -10,7 +10,8 @@ import {
   Sun,
   Menu,
   X,
-  Building2
+  Building2,
+  ShieldCheck
 } from 'lucide-react'
 import { useState } from 'react'
 import UserMenu from './UserMenu'
@@ -31,7 +32,8 @@ export default function Header() {
   const { isDarkMode, toggleDarkMode } = useThemeStore()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
-  const isHR = user?.userRole === 'hr' || user?.userRole === 'admin'
+  const isHR = user?.userRole === 'hr'
+  const isAdmin = user?.userRole === 'admin'
 
   return (
     <header className="sticky top-0 z-50 bg-white dark:bg-[#121212] border-b border-gray-200 dark:border-gray-800 shadow-sm">
@@ -75,6 +77,20 @@ export default function Header() {
               >
                 <Users className="w-5 h-5" />
                 <span className="text-xs mt-1">HR</span>
+              </Link>
+            )}
+
+            {isAdmin && (
+              <Link
+                to="/admin/dashboard"
+                className={`flex flex-col items-center px-4 py-2 rounded-lg transition-colors ${
+                  location.pathname.startsWith('/admin')
+                    ? 'text-red-600 bg-red-600/10'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+              >
+                <ShieldCheck className="w-5 h-5" />
+                <span className="text-xs mt-1">Admin</span>
               </Link>
             )}
           </nav>
@@ -148,6 +164,20 @@ export default function Header() {
               >
                 <Users className="w-5 h-5" />
                 <span>HR Dashboard</span>
+              </Link>
+            )}
+            {isAdmin && (
+              <Link
+                to="/admin/dashboard"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
+                  location.pathname.startsWith('/admin')
+                    ? 'text-red-600 bg-red-600/10'
+                    : 'text-gray-600 dark:text-gray-400'
+                }`}
+              >
+                <ShieldCheck className="w-5 h-5" />
+                <span>Admin Dashboard</span>
               </Link>
             )}
           </nav>

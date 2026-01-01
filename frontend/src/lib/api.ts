@@ -208,3 +208,23 @@ export const notificationsAPI = {
   markAllAsRead: () => api.post('/notifications/mark-all-read'),
   deleteNotification: (id: number) => api.delete(`/notifications/${id}`),
 }
+
+// Admin API
+export const adminAPI = {
+  getAnalytics: () => api.get('/admin/analytics'),
+  getUsers: (params?: { page?: number; per_page?: number; search?: string }) =>
+    api.get('/admin/users', { params }),
+  updateUserStatus: (id: number, status: 'active' | 'deactivated') =>
+    api.put(`/admin/users/${id}/status`, { status }),
+  updateUserRole: (id: number, role: 'normal' | 'hr' | 'admin') =>
+    api.put(`/admin/users/${id}/role`, { role }),
+  getJobs: (params?: { page?: number; per_page?: number }) =>
+    api.get('/admin/jobs', { params }),
+  deleteJob: (id: number) => api.delete(`/admin/jobs/${id}`),
+  getInterviews: (params?: { page?: number; per_page?: number }) =>
+    api.get('/admin/interviews', { params }),
+  deleteInterview: (id: number) => api.delete(`/admin/interviews/${id}`),
+  getBlogs: (params?: { page?: number; per_page?: number }) =>
+    api.get('/admin/blogs', { params }),
+  deleteBlog: (id: number) => api.delete(`/admin/blogs/${id}`),
+}
