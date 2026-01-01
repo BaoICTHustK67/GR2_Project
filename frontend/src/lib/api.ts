@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { useAuthStore } from '@/store/authStore'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -103,6 +103,7 @@ export const usersAPI = {
   updateProject: (id: number, data: any) => api.put(`/users/projects/${id}`, data),
   deleteProject: (id: number) => api.delete(`/users/projects/${id}`),
   getSuggestions: (limit?: number) => api.get('/users/suggestions', { params: { limit } }),
+  scanProfile: (role: string, level: string) => api.post('/users/scan-profile', { role, level }),
 }
 
 // Jobs API
@@ -186,6 +187,15 @@ export const interviewsAPI = {
   getFeedback: (interviewId: number) => api.get(`/interviews/${interviewId}/feedback`),
   createFeedback: (interviewId: number, data: any) =>
     api.post(`/interviews/${interviewId}/feedback`, data),
+  generateInterview: (data: {
+    role: string
+    level: string
+    techstack: string
+    type: string
+  }) => api.post('/interviews/generate', data),
+  generateFeedback: (interviewId: number, transcript: any[]) => 
+    api.post(`/interviews/${interviewId}/feedback`, { transcript }),
+  deleteInterview: (id: number) => api.delete(`/interviews/${id}`),
 }
 
 // Notifications API

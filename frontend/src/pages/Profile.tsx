@@ -32,6 +32,11 @@ import {
   Camera,
   MessageSquare,
   Clock,
+  Sparkles,
+  CheckCircle2,
+  AlertCircle,
+  TrendingUp,
+  Target,
 } from 'lucide-react'
 
 // Form Schemas
@@ -100,6 +105,13 @@ export default function Profile() {
   const [editingSection, setEditingSection] = useState<string | null>(null)
   const [editingItem, setEditingItem] = useState<any>(null)
   const [isSaving, setIsSaving] = useState(false)
+  
+  // Profile Scan states
+  const [showScanModal, setShowScanModal] = useState(false)
+  const [isScanningProfile, setIsScanningProfile] = useState(false)
+  const [scanResults, setScanResults] = useState<any>(null)
+  const [targetRole, setTargetRole] = useState('')
+  const [targetLevel, setTargetLevel] = useState('Mid')
 
   const isOwnProfile = !id || id === String(currentUser?.id)
 
@@ -357,6 +369,37 @@ export default function Profile() {
     }
   }
 
+  const handleScanProfile = async () => {
+    if (!targetRole) {
+      toast.error('Please enter a target role')
+      return
+    }
+
+    const hasData = (profile?.experience?.length || 0) > 0 || 
+                    (profile?.education?.length || 0) > 0 || 
+                    (profile?.skills?.length || 0) > 0 || 
+                    (profile?.projects?.length || 0) > 0
+
+    if (!hasData) {
+      toast.error('Please set up at least one section: Experience, Education, Skills, or Projects.')
+      return
+    }
+
+    setIsScanningProfile(true)
+    try {
+      const response = await usersAPI.scanProfile(targetRole, targetLevel)
+      if (response.data.success) {
+        setScanResults(response.data.results)
+        setShowScanModal(false)
+        toast.success('Profile scan completed!')
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to scan profile')
+    } finally {
+      setIsScanningProfile(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -442,13 +485,22 @@ export default function Profile() {
                 {/* Actions */}
                 <div className="flex gap-2">
                   {isOwnProfile ? (
-                    <button
-                      onClick={() => openEditModal('about')}
-                      className="btn btn-primary"
-                    >
-                      <Edit className="w-4 h-4" />
-                      Edit Profile
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowScanModal(true)}
+                        className="btn bg-gradient-to-r from-purple-600 to-primary text-white hover:from-purple-700 hover:to-primary/90 border-none shadow-md"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        Scan Profile
+                      </button>
+                      <button
+                        onClick={() => openEditModal('about')}
+                        className="btn btn-outline"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Edit Profile
+                      </button>
+                    </div>
                   ) : (
                     <>
                       <button
@@ -569,6 +621,110 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      {/* Scan Results */}
+      {scanResults && (
+        <div className="card p-6 bg-gradient-to-br from-white to-purple-50 dark:from-gray-900 dark:to-purple-900/20 border-purple-100 dark:border-purple-900/30 overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-2">
+            <button 
+              onClick={() => setScanResults(null)}
+              className="p-1 hover:bg-black/5 rounded-full"
+            >
+              <X className="w-4 h-4 text-gray-400" />
+            </button>
+          </div>
+          
+          <div className="flex flex-col md:flex-row gap-6 items-start">
+            <div className="flex-shrink-0 flex flex-col items-center">
+              <div className="relative w-24 h-24 flex items-center justify-center">
+                <svg className="w-24 h-24 transform -rotate-90">
+                  <circle
+                    className="text-gray-200 dark:text-gray-800"
+                    strokeWidth="8"
+                    stroke="currentColor"
+                    fill="transparent"
+                    r="40"
+                    cx="48"
+                    cy="48"
+                  />
+                  <circle
+                    className="text-primary"
+                    strokeWidth="8"
+                    strokeDasharray={2 * Math.PI * 40}
+                    strokeDashoffset={2 * Math.PI * 40 * (1 - scanResults.matchingScore / 100)}
+                    strokeLinecap="round"
+                    stroke="currentColor"
+                    fill="transparent"
+                    r="40"
+                    cx="48"
+                    cy="48"
+                  />
+                </svg>
+                <span className="absolute text-xl font-bold">{scanResults.matchingScore}%</span>
+              </div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary mt-2">Match Score</p>
+            </div>
+            
+            <div className="flex-1 space-y-4">
+              <div>
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <Target className="w-5 h-5 text-purple-600" />
+                  Analysis for {targetRole} ({targetLevel} Level)
+                </h3>
+                <p className="text-gray-700 dark:text-gray-300 mt-2 leading-relaxed">
+                  {scanResults.feedback}
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <h4 className="text-sm font-bold flex items-center gap-1.5 text-green-600">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Strengths
+                  </h4>
+                  <ul className="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                    {scanResults.strengths.map((s: string, i: number) => (
+                      <li key={i} className="flex items-start gap-1.5">
+                        <span className="mt-1 w-1 h-1 rounded-full bg-green-500 flex-shrink-0" />
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                <div className="space-y-2">
+                  <h4 className="text-sm font-bold flex items-center gap-1.5 text-yellow-600">
+                    <AlertCircle className="w-4 h-4" />
+                    Gap Areas
+                  </h4>
+                  <ul className="text-sm space-y-1 text-gray-600 dark:text-gray-400">
+                    {scanResults.gaps.map((g: string, i: number) => (
+                      <li key={i} className="flex items-start gap-1.5">
+                        <span className="mt-1 w-1 h-1 rounded-full bg-yellow-500 flex-shrink-0" />
+                        {g}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+              
+              <div className="pt-2">
+                <h4 className="text-sm font-bold flex items-center gap-1.5 text-primary">
+                  <TrendingUp className="w-4 h-4" />
+                  Recommendations
+                </h4>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {scanResults.recommendations.map((r: string, i: number) => (
+                    <span key={i} className="px-3 py-1 bg-white/50 dark:bg-black/20 border border-purple-200 dark:border-purple-800 rounded-lg text-xs font-medium">
+                      {r}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* About Section */}
       <div className="card p-6">
@@ -899,6 +1055,18 @@ export default function Profile() {
           onSave={handleSaveProject}
           onClose={closeEditModal}
           isSaving={isSaving}
+        />
+      )}
+
+      {showScanModal && (
+        <ScanProfileModal
+          onScan={handleScanProfile}
+          onClose={() => setShowScanModal(false)}
+          isScanning={isScanningProfile}
+          targetRole={targetRole}
+          setTargetRole={setTargetRole}
+          targetLevel={targetLevel}
+          setTargetLevel={setTargetLevel}
         />
       )}
     </div>
@@ -1298,6 +1466,91 @@ function ProjectModal({ project, onSave, onClose, isSaving }: {
               </button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ScanProfileModal({ 
+  onScan, 
+  onClose, 
+  isScanning, 
+  targetRole, 
+  setTargetRole, 
+  targetLevel, 
+  setTargetLevel 
+}: { 
+  onScan: () => void
+  onClose: () => void
+  isScanning: boolean
+  targetRole: string
+  setTargetRole: (val: string) => void
+  targetLevel: string
+  setTargetLevel: (val: string) => void
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-[#1A1C20] rounded-lg shadow-xl max-w-md w-full">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-600" />
+              Scan Profile
+            </h2>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+            Our AI will analyze your profile and provide a matching score and feedback for your target role.
+          </p>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Target Role *</label>
+              <input 
+                value={targetRole}
+                onChange={(e) => setTargetRole(e.target.value)}
+                className="input w-full" 
+                placeholder="e.g. Frontend Developer, Data Scientist" 
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Target Level</label>
+              <select 
+                value={targetLevel}
+                onChange={(e) => setTargetLevel(e.target.value)}
+                className="input w-full"
+              >
+                <option value="Intern">Intern</option>
+                <option value="Junior">Junior</option>
+                <option value="Mid">Mid Level</option>
+                <option value="Senior">Senior</option>
+                <option value="Lead/Staff">Lead / Staff</option>
+              </select>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button type="button" onClick={onClose} className="btn btn-ghost flex-1">Cancel</button>
+              <button 
+                onClick={onScan} 
+                disabled={isScanning || !targetRole} 
+                className="btn btn-primary flex-1 bg-gradient-to-r from-purple-600 to-primary text-white border-none"
+              >
+                {isScanning ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Start Scan
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

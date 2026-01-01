@@ -1,10 +1,14 @@
 """
 User Routes
 """
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
 from app.models import User, Education, Experience, Skill, Project
+import google.generativeai as genai
+import os
+import json
+from datetime import datetime
 
 bp = Blueprint('users', __name__, url_prefix='/api/users')
 
@@ -571,3 +575,93 @@ def get_suggested_connections():
         'success': True,
         'suggestions': [user.to_dict() for user in users]
     })
+
+def clean_json(text):
+    if not text:
+        return "{}"
+    clean = text.replace('```json', '').replace('```', '')
+    return clean.strip()
+
+@bp.route('/scan-profile', methods=['POST'])
+@jwt_required()
+def scan_profile():
+    """Scan user profile and provide AI feedback"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        
+        if not user:
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+            
+        data = request.get_json()
+        target_role = data.get('role')
+        target_level = data.get('level')
+        
+        if not target_role or not target_level:
+            return jsonify({'success': False, 'message': 'Role and level are required'}), 400
+            
+        # Collect profile information
+        experience = [exp.to_dict() for exp in user.experiences]
+        education = [edu.to_dict() for edu in user.educations]
+        skills = [skill.to_dict() for skill in user.skills]
+        projects = [proj.to_dict() for proj in user.projects]
+        
+        # Validation: check if at least one field has data
+        if not any([experience, education, skills, projects]):
+            return jsonify({
+                'success': False, 
+                'message': 'Please set up at least one of these fields: Experience, Education, Skills, or Projects to scan your profile.'
+            }), 400
+            
+        # Configure Gemini
+        api_key = os.getenv('GEMINI_API_KEY')
+        if not api_key:
+             return jsonify({'success': False, 'error': 'Server configuration error: Gemini API Key missing'}), 500
+        
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        # Prepare content for AI analysis
+        profile_data = {
+            'name': user.name,
+            'headline': user.headline,
+            'bio': user.bio,
+            'experience': experience,
+            'education': education,
+            'skills': skills,
+            'projects': projects
+        }
+        
+        prompt = f"""Analyze the following user profile and provide feedback for the target role of "{target_role}" at "{target_level}" level.
+            
+            PROFILE DATA:
+            {json.dumps(profile_data, indent=2)}
+            
+            Provide a detailed evaluation in JSON format with the following structure:
+            {{
+                "matchingScore": <number 0-100 indicating how well they match the target role/level>,
+                "feedback": "<overall summary of the profile suitability>",
+                "strengths": [<list of strings highlighting key relevant strengths>],
+                "gaps": [<list of strings identifying missing skills or experience>],
+                "recommendations": [<list of strings with actionable advice to improve matching>]
+            }}
+            
+            CRITICAL INSTRUCTION: Return ONLY raw JSON. Do not use Markdown formatting. Do not wrap in ```.
+        """
+        
+        try:
+            response = model.generate_content(prompt)
+            raw_text = response.text
+            scan_results = json.loads(clean_json(raw_text))
+        except Exception as e:
+            print(f"Gemini API Error: {e}")
+            return jsonify({'success': False, 'error': 'Failed to analyze profile using AI'}), 500
+            
+        return jsonify({
+            'success': True,
+            'results': scan_results
+        }), 200
+        
+    except Exception as e:
+        print(f"Profile Scan Error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500

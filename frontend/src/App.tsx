@@ -25,6 +25,9 @@ import CreateJob from '@/pages/hr/CreateJob'
 import HRCompany from '@/pages/hr/Company'
 import HRApplications from '@/pages/hr/Applications'
 import HRAnalytics from '@/pages/hr/Analytics'
+import InterviewSetup from '@/pages/InterviewSetup'
+import InterviewSession from '@/pages/InterviewSession'
+import InterviewFeedback from '@/pages/InterviewFeedback'
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -68,6 +71,9 @@ function App() {
         <Route path="/jobs" element={<Jobs />} />
         <Route path="/jobs/:id" element={<JobDetail />} />
         <Route path="/interviews" element={<Interviews />} />
+        <Route path="/interview/new" element={<InterviewSetup />} />
+        <Route path="/interview/:id" element={<InterviewSession />} />
+        <Route path="/interview/:id/feedback" element={<InterviewFeedback />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/profile/:id" element={<Profile />} />
         <Route path="/companies" element={<Companies />} />

@@ -10,7 +10,7 @@ import {
   PlayCircle,
   Loader2,
   Star,
-  ChevronRight,
+  Trash2,
 } from 'lucide-react'
 
 export default function Interviews() {
@@ -35,15 +35,29 @@ export default function Interviews() {
     }
   }
 
+  const handleDelete = async (e: React.MouseEvent, id: number) => {
+    e.preventDefault() // Prevent navigation if button is inside a Link or clickable card
+    if (window.confirm('Are you sure you want to delete this interview?')) {
+      try {
+        await interviewsAPI.deleteInterview(id)
+        setInterviews(interviews.filter((i) => i.id !== id))
+      } catch (error) {
+        console.error('Error deleting interview:', error)
+        alert('Failed to delete interview')
+      }
+    }
+  }
+
   const filteredInterviews = interviews.filter((interview) => {
+    const isCompleted = interview.completedAt || interview.finalized
     if (filter === 'all') return true
-    if (filter === 'pending') return !interview.completedAt
-    if (filter === 'completed') return interview.completedAt
+    if (filter === 'pending') return !isCompleted
+    if (filter === 'completed') return isCompleted
     return true
   })
 
   const getStatusBadge = (interview: Interview) => {
-    if (interview.completedAt) {
+    if (interview.completedAt || interview.finalized) {
       return (
         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
           <CheckCircle className="w-3 h-3" />
@@ -91,8 +105,8 @@ export default function Interviews() {
           >
             {status.charAt(0).toUpperCase() + status.slice(1)}
             {status === 'all' && ` (${interviews.length})`}
-            {status === 'pending' && ` (${interviews.filter((i) => !i.completedAt).length})`}
-            {status === 'completed' && ` (${interviews.filter((i) => i.completedAt).length})`}
+            {status === 'pending' && ` (${interviews.filter((i) => !i.completedAt && !i.finalized).length})`}
+            {status === 'completed' && ` (${interviews.filter((i) => i.completedAt || i.finalized).length})`}
           </button>
         ))}
       </div>
@@ -124,6 +138,7 @@ export default function Interviews() {
               key={interview.id}
               interview={interview}
               getStatusBadge={getStatusBadge}
+              onDelete={handleDelete}
             />
           ))}
         </div>
@@ -177,21 +192,16 @@ export default function Interviews() {
 function InterviewCard({
   interview,
   getStatusBadge,
+  onDelete,
 }: {
   interview: Interview
   getStatusBadge: (interview: Interview) => JSX.Element
+  onDelete: (e: React.MouseEvent, id: number) => void
 }) {
-  const averageScore =
-    interview.feedback && interview.feedback.length > 0
-      ? interview.feedback.reduce((sum, f) => sum + (f.score || 0), 0) /
-        interview.feedback.length
-      : null
+  const isCompleted = interview.finalized || interview.completedAt;
 
   return (
-    <Link
-      to={`/interview/${interview.id}`}
-      className="card p-6 block hover:shadow-md transition-shadow"
-    >
+    <div className="card p-6 block hover:shadow-md transition-shadow relative">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
@@ -220,26 +230,49 @@ function InterviewCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          {averageScore !== null && (
-            <div className="text-center">
-              <div
-                className={`text-2xl font-bold ${
-                  averageScore >= 80
-                    ? 'text-green-500'
-                    : averageScore >= 60
-                    ? 'text-yellow-500'
-                    : 'text-red-500'
-                }`}
-              >
-                {Math.round(averageScore)}%
-              </div>
-              <div className="text-xs text-gray-500">Score</div>
-            </div>
-          )}
-          <ChevronRight className="w-5 h-5 text-gray-400" />
+        <div className="flex flex-col items-end gap-2">
+            {isCompleted ? (
+                 <div className="flex gap-2 items-center">
+                    <Link 
+                        to={`/interview/${interview.id}/feedback`}
+                        className="btn btn-outline btn-sm"
+                    >
+                        View Feedback
+                    </Link>
+                    <Link 
+                        to={`/interview/${interview.id}`} 
+                        className="btn btn-primary btn-sm"
+                    >
+                        Retake
+                    </Link>
+                    <button
+                        onClick={(e) => onDelete(e, interview.id)}
+                        className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                        title="Delete Interview"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                 </div>
+            ) : (
+                <div className="flex gap-2 items-center">
+                    <Link 
+                        to={`/interview/${interview.id}`} 
+                        className="btn btn-primary btn-sm flex items-center gap-1"
+                    >
+                        <PlayCircle className="w-4 h-4" />
+                        Continue
+                    </Link>
+                    <button
+                        onClick={(e) => onDelete(e, interview.id)}
+                        className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                        title="Delete Interview"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
         </div>
-      </div>
+        </div>
 
       {/* Tech Stack */}
       {interview.techstack && interview.techstack.length > 0 && (
@@ -259,6 +292,6 @@ function InterviewCard({
           )}
         </div>
       )}
-    </Link>
+    </div>
   )
 }
