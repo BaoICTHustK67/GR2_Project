@@ -158,7 +158,111 @@ def create_interview():
 @bp.route('/from-job', methods=['POST'])
 @jwt_required()
 def create_interview_from_job():
-     return jsonify({'success': True, 'message': 'Job-based creation not implemented yet'}), 200
+    try:
+        current_user_id = int(get_jwt_identity())
+        user = User.query.get(current_user_id)
+        
+        data = request.get_json()
+        job_id = data.get('jobId')
+        
+        if not job_id:
+            return jsonify({'success': False, 'error': 'Job ID is required'}), 400
+            
+        job = Job.query.get(job_id)
+        if not job:
+            return jsonify({'success': False, 'error': 'Job not found'}), 404
+
+        # Gather user context
+        from app.models import Education, Experience, Skill, Project
+        educations = Education.query.filter_by(user_id=current_user_id).all()
+        experiences = Experience.query.filter_by(user_id=current_user_id).all()
+        skills = Skill.query.filter_by(user_id=current_user_id).all()
+        projects = Project.query.filter_by(user_id=current_user_id).all()
+
+        user_context = f"""
+        User Name: {user.name}
+        Headline: {user.headline}
+        Bio: {user.bio}
+        Skills: {', '.join([s.name for s in skills])}
+        Experiences: {'; '.join([f"{e.title} at {e.company}" for e in experiences])}
+        Education: {'; '.join([f"{edu.degree} from {edu.school}" for edu in educations])}
+        Projects: {'; '.join([p.name for p in projects])}
+        """
+
+        job_context = f"""
+        Job Title: {job.title}
+        Company: {job.company.name if job.company else 'N/A'}
+        Description: {job.description}
+        Requirements: {', '.join(job.requirements) if isinstance(job.requirements, list) else job.requirements}
+        """
+
+        # Configure Gemini
+        api_key = os.getenv('GEMINI_API_KEY')
+        if not api_key:
+            return jsonify({'success': False, 'error': 'Server configuration error: Gemini API Key missing'}), 500
+        
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+
+        prompt = f"""You are an expert interviewer for {job.title} at {job.company.name if job.company else 'a top company'}.
+        
+        Using the Job Context and User Background below, generate 5-7 specialized interview questions.
+        The questions should:
+        1. Test the technical skills required for the job.
+        2. Specifically reference the candidate's background where relevant (e.g., how their experience at a past company or a specific project applies to this role).
+        3. Include a mix of behavioral and technical questions.
+        
+        JOB CONTEXT:
+        {job_context}
+        
+        CANDIDATE BACKGROUND:
+        {user_context}
+        
+        CRITICAL INSTRUCTION: Return ONLY a raw JSON array of strings. 
+        Do not use Markdown formatting. Do not wrap in ```. 
+        Example: ["Question 1", "Question 2"]
+        
+        The questions are going to be read by a voice assistant so do not use "/" or "*" or any other special characters.
+        """
+
+        try:
+            response = model.generate_content(prompt)
+            raw_text = response.text
+            questions = json.loads(clean_json(raw_text))
+        except Exception as e:
+            print(f"AI Generation Error: {e}")
+            # Fallback questions
+            questions = [
+                f"Tell me how your experience makes you a good fit for the {job.title} role.",
+                f"Based on your projects, how would you approach the challenges mentioned in our job description?",
+                "Describe a situation where you had to learn a new technology quickly to meet a project deadline.",
+                f"How do your skills in {', '.join([s.name for s in skills[:3]])} align with our requirements?",
+                "What motivates you to join our company?"
+            ]
+
+        interview = Interview(
+            user_id=current_user_id,
+            job_id=job.id,
+            role=job.title,
+            interview_type='mixed',
+            tech_stack=job.requirements[:5] if isinstance(job.requirements, list) else [],
+            questions=questions,
+            finalized=False,
+            cover_image='/defaults/interview_cover.jpg'
+        )
+
+        db.session.add(interview)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'interviewId': interview.id,
+            'questions': questions
+        }), 201
+
+    except Exception as e:
+        print(f"Create Interview from Job Error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @bp.route('/<int:interview_id>', methods=['PUT'])
 @jwt_required()

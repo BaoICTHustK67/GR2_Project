@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -42,6 +42,7 @@ interface UserApplication {
 
 export default function JobDetail() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [job, setJob] = useState<Job | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showApplyModal, setShowApplyModal] = useState(false)
@@ -101,6 +102,12 @@ export default function JobDetail() {
             status: response.data.application.status || 'pending',
             appliedAt: response.data.application.createdAt || new Date().toISOString()
           })
+          
+          // Update local job applicant count
+          setJob(prev => prev ? {
+            ...prev,
+            applicantCount: (prev.applicantCount || 0) + 1
+          } : null)
         }
         reset()
       } else {
@@ -120,10 +127,14 @@ export default function JobDetail() {
     try {
       const response = await interviewsAPI.createInterviewFromJob(Number(id))
       if (response.data.success) {
-        toast.success('Interview created! Check your interviews page.')
+        toast.success('AI Mock Interview created!')
+        // Redirect to the interview page
+        if (response.data.interviewId) {
+          navigate(`/interview/${response.data.interviewId}`)
+        }
       }
     } catch (error) {
-      toast.error('Failed to create practice interview')
+      toast.error('Failed to create mock AI interview')
     } finally {
       setIsCreatingInterview(false)
     }
@@ -289,7 +300,7 @@ export default function JobDetail() {
             ) : (
               <>
                 <Video className="w-5 h-5" />
-                Practice Interview
+                Mock AI Interview
               </>
             )}
           </button>
