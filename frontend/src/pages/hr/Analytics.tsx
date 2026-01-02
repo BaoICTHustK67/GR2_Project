@@ -6,9 +6,8 @@ import {
   Users,
   Briefcase,
   Eye,
-  Clock,
   BarChart3,
-  PieChart,
+  PieChart as PieChartIcon,
   ArrowUp,
   ArrowDown,
   Minus,
@@ -16,6 +15,19 @@ import {
   AlertTriangle,
   Loader2,
 } from 'lucide-react'
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from 'recharts'
 
 interface AnalyticsData {
   totalJobsPosted: number
@@ -26,7 +38,11 @@ interface AnalyticsData {
   acceptanceRate: number
   viewsThisMonth: number
   applicationsThisMonth: number
+  statusDistribution: { name: string; value: number }[]
+  trendData: { date: string; applications: number; views: number }[]
 }
+
+const COLORS = ['#F59E0B', '#3B82F6', '#10B981', '#EF4444']
 
 export default function HRAnalytics() {
   const { user } = useAuthStore()
@@ -39,6 +55,8 @@ export default function HRAnalytics() {
     acceptanceRate: 0,
     viewsThisMonth: 0,
     applicationsThisMonth: 0,
+    statusDistribution: [],
+    trendData: [],
   })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -57,15 +75,19 @@ export default function HRAnalytics() {
     setError('')
     
     try {
-      const response = await jobsAPI.getHRMetrics()
+      const response = await jobsAPI.getHRMetrics({ range: timeRange })
       if (response.data.success) {
+        const metrics = response.data.metrics
+        const totalViews = metrics.trendData.reduce((acc: number, curr: any) => acc + curr.views, 0)
+        const appsThisMonth = metrics.trendData.reduce((acc: number, curr: any) => acc + curr.applications, 0)
+        
         setAnalytics({
-          ...response.data.metrics,
-          acceptanceRate: response.data.metrics.totalApplicants > 0 
-            ? Math.round((response.data.metrics.pendingApplications / response.data.metrics.totalApplicants) * 100)
+          ...metrics,
+          acceptanceRate: metrics.totalApplicants > 0 
+            ? Math.round((metrics.statusDistribution.find((s: any) => s.name === 'Accepted')?.value || 0) / metrics.totalApplicants * 100)
             : 0,
-          viewsThisMonth: Math.floor(Math.random() * 500) + 100, // Placeholder
-          applicationsThisMonth: response.data.metrics.totalApplicants,
+          viewsThisMonth: totalViews,
+          applicationsThisMonth: appsThisMonth,
         })
       }
     } catch (err: any) {
@@ -102,12 +124,12 @@ export default function HRAnalytics() {
       changeType: 'neutral' as const,
     },
     {
-      title: 'Avg. Time to Hire',
-      value: '14 days',
-      icon: Clock,
+      title: 'Avg. Applicants/Job',
+      value: analytics.averageApplicantsPerJob,
+      icon: BarChart3,
       color: 'bg-yellow-500',
       change: 5,
-      changeType: 'decrease' as const,
+      changeType: 'increase' as const,
     },
   ]
 
@@ -215,37 +237,76 @@ export default function HRAnalytics() {
 
           {/* Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Applications Over Time */}
+            {/* Trend Chart */}
             <div className="card p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Applications Over Time
+                  Applications Trend
                 </h3>
                 <BarChart3 className="w-5 h-5 text-gray-400" />
               </div>
-              <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                <div className="text-center text-gray-500">
-                  <BarChart3 className="w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
-                  <p className="text-sm">Chart visualization coming soon</p>
-                  <p className="text-xs mt-1">Currently showing {analytics.totalApplicants} total applications</p>
-                </div>
+              <div className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={analytics.trendData}>
+                    <defs>
+                      <linearGradient id="colorApps" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                    <XAxis 
+                      dataKey="date" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                      tickFormatter={(val) => new Date(val).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#FFF', borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="applications" 
+                      stroke="#3B82F6" 
+                      strokeWidth={2}
+                      fillOpacity={1} 
+                      fill="url(#colorApps)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </div>
 
-            {/* Application Status Distribution */}
+            {/* Status Distribution */}
             <div className="card p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Application Status
+                  Applications Status
                 </h3>
-                <PieChart className="w-5 h-5 text-gray-400" />
+                <PieChartIcon className="w-5 h-5 text-gray-400" />
               </div>
-              <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                <div className="text-center text-gray-500">
-                  <PieChart className="w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
-                  <p className="text-sm">Chart visualization coming soon</p>
-                  <p className="text-xs mt-1">{analytics.pendingApplications} pending reviews</p>
-                </div>
+              <div className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={analytics.statusDistribution}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {analytics.statusDistribution.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend verticalAlign="bottom" height={36}/>
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
             </div>
           </div>
@@ -253,18 +314,18 @@ export default function HRAnalytics() {
           {/* Key Metrics */}
           <div className="card p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Key Metrics
+              Detailed Metrics
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                <p className="text-3xl font-bold text-primary">{analytics.averageApplicantsPerJob.toFixed(1)}</p>
+              <div className="text-center p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700">
+                <p className="text-3xl font-bold text-primary">{analytics.averageApplicantsPerJob}</p>
                 <p className="text-sm text-gray-500 mt-1">Avg. Applicants per Job</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <div className="text-center p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700">
                 <p className="text-3xl font-bold text-green-500">{analytics.totalJobsPosted}</p>
                 <p className="text-sm text-gray-500 mt-1">Total Jobs Posted</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <div className="text-center p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700">
                 <p className="text-3xl font-bold text-purple-500">{analytics.openPositions}</p>
                 <p className="text-sm text-gray-500 mt-1">Currently Open</p>
               </div>

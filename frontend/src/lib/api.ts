@@ -122,7 +122,7 @@ export const jobsAPI = {
     api.patch(`/jobs/applications/${id}/status`, { status }),
   getMyApplications: () => api.get('/jobs/my-applications'),
   getHRJobs: () => api.get('/jobs/hr/jobs'),
-  getHRMetrics: () => api.get('/jobs/hr/metrics'),
+  getHRMetrics: (params?: { range?: string }) => api.get('/jobs/hr/metrics', { params }),
   getHRRecentApplications: (limit?: number) => api.get('/jobs/hr/recent-applications', { params: { limit } }),
 }
 
