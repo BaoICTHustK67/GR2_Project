@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.9",
     "@hookform/resolvers": "^3.3.2",
     "@vapi-ai/web": "^2.5.2",
     "axios": "^1.6.2",

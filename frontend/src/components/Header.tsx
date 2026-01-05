@@ -11,7 +11,8 @@ import {
   Menu,
   X,
   Building2,
-  ShieldCheck
+  ShieldCheck,
+  Map 
 } from 'lucide-react'
 import { useState } from 'react'
 import UserMenu from './UserMenu'
@@ -22,6 +23,7 @@ const navLinks = [
   { href: '/jobs', label: 'Jobs', icon: Briefcase },
   { href: '/interviews', label: 'Interviews', icon: MessageSquare },
   { href: '/companies', label: 'Companies', icon: Building2 },
+  { href: '/roadmaps', label: 'Roadmap', icon: Map },
   { href: '/network', label: 'Network', icon: Users },
   { href: '/messages', label: 'Messages', icon: MessageSquare },
 ]

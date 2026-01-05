@@ -550,3 +550,70 @@ class Message(db.Model):
             'sender': self.sender.to_dict() if self.sender else None,
             'timestamp': self.created_at.isoformat() + 'Z' if self.created_at else None,
         }
+
+
+class RoadmapTemplate(db.Model):
+    """Predefined career roadmap templates"""
+    __tablename__ = 'roadmap_templates'
+
+    id = db.Column(db.Integer, primary_key=True)
+    role = db.Column(db.String(100), nullable=False)  # e.g., "Frontend Developer"
+    level = db.Column(db.String(50))  # e.g., "Junior", "Senior"
+    description = db.Column(db.Text)
+    cover_image = db.Column(db.String(500))
+    estimated_duration = db.Column(db.String(50))  # e.g., "6-12 months"
+    steps = db.Column(db.JSON)  # List of milestone objects
+    skills_covered = db.Column(db.JSON)  # List of skill names
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'role': self.role,
+            'level': self.level,
+            'description': self.description,
+            'coverImage': self.cover_image,
+            'estimatedDuration': self.estimated_duration,
+            'steps': self.steps or [],
+            'skillsCovered': self.skills_covered or [],
+            'isActive': self.is_active,
+            'createdAt': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class UserRoadmap(db.Model):
+    """User's saved/generated roadmaps"""
+    __tablename__ = 'user_roadmaps'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    template_id = db.Column(db.Integer, db.ForeignKey('roadmap_templates.id'), nullable=True)
+    title = db.Column(db.String(200), nullable=False)
+    target_role = db.Column(db.String(100))
+    target_level = db.Column(db.String(50))
+    steps = db.Column(db.JSON)  # Personalized steps with progress
+    progress = db.Column(db.Integer, default=0)  # Percentage 0-100
+    is_ai_generated = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = db.relationship('User', backref=db.backref('roadmaps', lazy='dynamic'))
+    template = db.relationship('RoadmapTemplate', backref='user_instances')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'userId': self.user_id,
+            'templateId': self.template_id,
+            'title': self.title,
+            'targetRole': self.target_role,
+            'targetLevel': self.target_level,
+            'steps': self.steps or [],
+            'progress': self.progress,
+            'isAiGenerated': self.is_ai_generated,
+            'createdAt': self.created_at.isoformat() if self.created_at else None,
+            'updatedAt': self.updated_at.isoformat() if self.updated_at else None,
+        }

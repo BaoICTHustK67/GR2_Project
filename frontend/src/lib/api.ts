@@ -105,6 +105,16 @@ export const usersAPI = {
   getSuggestions: (limit?: number) => api.get('/users/suggestions', { params: { limit } }),
   scanProfile: (role: string, level: string) => api.post('/users/scan-profile', { role, level }),
   enhanceProfile: (section: string, content: string) => api.post('/users/enhance-profile', { section, content }),
+  scanCV: (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post('/users/scan-cv', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+  },
+  bulkUpdateProfile: (data: any) => api.post('/users/profile/bulk-update', data),
 }
 
 // Jobs API
@@ -112,6 +122,7 @@ export const jobsAPI = {
   getJobs: (params?: { page?: number; per_page?: number; search?: string; location?: string; jobType?: string }) =>
     api.get('/jobs', { params }),
   getJob: (id: number) => api.get(`/jobs/${id}`),
+  getRecommendations: () => api.get('/jobs/recommendations'),
   createJob: (data: any) => api.post('/jobs', data),
   updateJob: (id: number, data: any) => api.put(`/jobs/${id}`, data),
   deleteJob: (id: number) => api.delete(`/jobs/${id}`),

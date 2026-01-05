@@ -34,6 +34,8 @@ import AdminUsers from '@/pages/admin/Users'
 import AdminJobs from '@/pages/admin/Jobs'
 import AdminInterviews from '@/pages/admin/Interviews'
 import AdminBlogs from '@/pages/admin/Blogs'
+import Roadmaps from '@/pages/Roadmaps'
+import RoadmapDetail from '@/pages/RoadmapDetail'
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -101,6 +103,8 @@ function App() {
         <Route path="/companies/:id" element={<CompanyDetail />} />
         <Route path="/network" element={<Networking />} />
         <Route path="/messages" element={<MessagesPage />} />
+        <Route path="/roadmaps" element={<Roadmaps />} />
+        <Route path="/roadmaps/:id" element={<RoadmapDetail />} />
       </Route>
 
       {/* HR Routes */}

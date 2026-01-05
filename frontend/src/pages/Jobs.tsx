@@ -13,12 +13,16 @@ import {
   ChevronRight,
   Loader2,
   Building2,
+  BarChart3,
 } from 'lucide-react'
 
 const ITEMS_PER_PAGE = 10
 
 export default function Jobs() {
   const [jobs, setJobs] = useState<Job[]>([])
+  const [recommendations, setRecommendations] = useState<Job[]>([])
+  const [isProfileComplete, setIsProfileComplete] = useState(true)
+  const [isRecLoading, setIsRecLoading] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [locationFilter, setLocationFilter] = useState('')
@@ -28,6 +32,7 @@ export default function Jobs() {
 
   useEffect(() => {
     fetchJobs()
+    fetchRecommendations()
   }, [currentPage, searchQuery, locationFilter, jobTypeFilter])
 
   const fetchJobs = async () => {
@@ -52,6 +57,21 @@ export default function Jobs() {
     }
   }
 
+  const fetchRecommendations = async () => {
+    setIsRecLoading(true)
+    try {
+      const response = await jobsAPI.getRecommendations()
+      if (response.data.success) {
+        setRecommendations(response.data.jobs || [])
+        setIsProfileComplete(response.data.isProfileComplete !== false)
+      }
+    } catch (error) {
+      console.error('Error fetching recommendations:', error)
+    } finally {
+      setIsRecLoading(false)
+    }
+  }
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     setCurrentPage(1)
@@ -60,6 +80,70 @@ export default function Jobs() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
+      {/* Recommendations Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-primary" />
+            Recommended for You
+          </h2>
+          {!isProfileComplete && (
+            <Link to="/profile" className="text-sm text-primary hover:underline">
+              Complete Profile
+            </Link>
+          )}
+        </div>
+
+        {isRecLoading ? (
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex-shrink-0 w-80 h-32 card animate-pulse bg-gray-100 dark:bg-gray-800" />
+            ))}
+          </div>
+        ) : !isProfileComplete ? (
+          <div className="card p-6 border-dashed border-2 flex flex-col items-center text-center">
+            <div className="p-3 rounded-full bg-primary/10 mb-3">
+              <Users className="w-6 h-6 text-primary" />
+            </div>
+            <p className="text-gray-900 dark:text-white font-medium">Personalize your job hunt</p>
+            <p className="text-sm text-gray-500 mb-4">Add skills, experience, or projects to your profile to get tailored recommendations.</p>
+            <Link to="/profile" className="btn btn-primary btn-sm">Complete Profile</Link>
+          </div>
+        ) : recommendations.length === 0 ? (
+          <div className="card p-6 text-center text-gray-500 text-sm">
+            We couldn't find any specific matches for your profile yet. Try adding more skills.
+          </div>
+        ) : (
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+            {recommendations.map((job) => (
+              <div key={job.id} className="flex-shrink-0 w-80">
+                <Link to={`/jobs/${job.id}`} className="card p-4 block hover:shadow-md transition-shadow h-full">
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0">
+                      {job.company?.logo ? (
+                        <img src={job.company.logo} alt={job.company.name} className="w-10 h-10 rounded object-cover" />
+                      ) : (
+                        <div className="w-10 h-10 rounded bg-primary/10 flex items-center justify-center">
+                          <Building2 className="w-6 h-6 text-primary" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{job.title}</h4>
+                      <p className="text-xs text-gray-500 truncate">{job.company?.name}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center gap-3 text-[10px] text-gray-500">
+                    <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.location}</span>
+                    <span className="flex items-center gap-1 text-primary font-medium">{formatSalary(job.salaryMin, job.salaryMax)}</span>
+                  </div>
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Search & Filters */}
       <div className="card p-4">
         <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">

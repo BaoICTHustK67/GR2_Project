@@ -753,3 +753,230 @@ def scan_profile():
     except Exception as e:
         print(f"Profile Scan Error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+from app.utils.cv_parser import extract_cv_data
+
+@bp.route('/scan-cv', methods=['POST'])
+@jwt_required()
+def scan_cv_endpoint():
+    """Scan uploaded CV and return extracted data with AI recommendations"""
+    try:
+        user_id = int(get_jwt_identity())
+        
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'message': 'No file part'}), 400
+            
+        file = request.files['file']
+        
+        if file.filename == '':
+            return jsonify({'success': False, 'message': 'No selected file'}), 400
+            
+        # Extract text from CV
+        cv_text = extract_cv_data(file)
+        
+        if not cv_text:
+            return jsonify({'success': False, 'message': 'Failed to extract text from file. Please ensure it is a valid PDF, DOCX, or TXT file.'}), 400
+            
+        # Configure Gemini
+        api_key = os.getenv('GEMINI_API_KEY')
+        if not api_key:
+             return jsonify({'success': False, 'error': 'Server configuration error: Gemini API Key missing'}), 500
+        
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        prompt = f"""
+        Extract professional profile data from the following CV/Resume text and return it as a structured JSON object matching the schema provided below.
+        Also provide recommendations for improving the profile based on the CV content.
+
+        CV TEXT:
+        {cv_text[:10000]}  # Limit text length to avoid token limits if necessary
+
+        SCHEMA:
+        {{
+            "user": {{
+                "name": "Full Name",
+                "email": "email@example.com",
+                "phone": "Phone Number",
+                "location": "City, Country",
+                "website": "Personal Website URL",
+                "linkedin": "LinkedIn URL",
+                "github": "GitHub URL",
+                "headline": "Professional Headline",
+                "bio": "Short professional biography summary"
+            }},
+            "education": [
+                {{
+                    "school": "University Name",
+                    "degree": "Degree Name",
+                    "fieldOfStudy": "Major/Field",
+                    "startDate": "YYYY-MM-DD",
+                    "endDate": "YYYY-MM-DD",
+                    "description": "Details about the education"
+                }}
+            ],
+            "experience": [
+                {{
+                    "title": "Job Title",
+                    "company": "Company Name",
+                    "location": "Location",
+                    "startDate": "YYYY-MM-DD",
+                    "endDate": "YYYY-MM-DD",
+                    "isCurrent": boolean,
+                    "description": "Job responsibilities and achievements"
+                }}
+            ],
+            "skills": [
+                {{
+                    "name": "Skill Name",
+                    "level": "Expert/Advanced/Intermediate/Beginner"
+                }}
+            ],
+            "projects": [
+                {{
+                    "name": "Project Name",
+                    "description": "Project description",
+                    "url": "Project URL",
+                    "technologies": ["Tech 1", "Tech 2"],
+                    "startDate": "YYYY-MM-DD",
+                    "endDate": "YYYY-MM-DD"
+                }}
+            ],
+            "recommendations": ["Recommendation 1", "Recommendation 2"]
+        }}
+
+        INSTRUCTIONS:
+        1. Parse dates to YYYY-MM-DD format. Use null if not found.
+        2. Infer skill levels if not explicitly stated (default to Intermediate).
+        3. Keep descriptions professional and concise.
+        4. Return ONLY valid JSON. No markdown formatting.
+        """
+        
+        try:
+            response = model.generate_content(prompt)
+            raw_text = response.text
+            extracted_data = json.loads(clean_json(raw_text))
+        except Exception as e:
+            print(f"Gemini API Error: {e}")
+            return jsonify({'success': False, 'error': 'Failed to analyze CV using AI'}), 500
+            
+        return jsonify({
+            'success': True,
+            'data': extracted_data
+        }), 200
+        
+    except Exception as e:
+        print(f"CV Scan Error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@bp.route('/profile/bulk-update', methods=['POST'])
+@jwt_required()
+def bulk_update_profile():
+    """Bulk update user profile data (used after CV scan)"""
+    try:
+        user_id = int(get_jwt_identity())
+        user = User.query.get(user_id)
+        
+        if not user:
+            return jsonify({'success': False, 'message': 'User not found'}), 404
+            
+        data = request.get_json()
+        
+        # 1. Update basic info (User model) - only update if value is not null/empty
+        user_data = data.get('user', {})
+        if user_data:
+            if user_data.get('name'): user.name = user_data['name']
+            if user_data.get('headline'): user.headline = user_data['headline']
+            if user_data.get('bio'): user.bio = user_data['bio']
+            if user_data.get('location'): user.location = user_data['location']
+            if user_data.get('phone'): user.phone = user_data['phone']
+            if user_data.get('website'): user.website = user_data['website']
+            if user_data.get('linkedin'): user.linkedin = user_data['linkedin']
+            if user_data.get('github'): user.github = user_data['github']
+        
+        # 2. Update Education - skip entries missing required 'school' field
+        educations_data = data.get('education', [])
+        for edu in educations_data:
+            school = edu.get('school')
+            if not school:  # Skip if school is missing
+                continue
+            new_edu = Education(
+                user_id=user_id,
+                school=school,
+                degree=edu.get('degree'),
+                field_of_study=edu.get('fieldOfStudy'),
+                start_date=parse_date(edu.get('startDate')),
+                end_date=parse_date(edu.get('endDate')),
+                description=edu.get('description')
+            )
+            db.session.add(new_edu)
+            
+        # 3. Update Experience - skip entries missing required 'title' or 'company'
+        experiences_data = data.get('experience', [])
+        for exp in experiences_data:
+            title = exp.get('title')
+            company = exp.get('company')
+            if not title or not company:  # Skip if required fields are missing
+                continue
+            new_exp = Experience(
+                user_id=user_id,
+                title=title,
+                company=company,
+                location=exp.get('location'),
+                start_date=parse_date(exp.get('startDate')),
+                end_date=parse_date(exp.get('endDate')),
+                is_current=exp.get('isCurrent', False),
+                description=exp.get('description')
+            )
+            db.session.add(new_exp)
+            
+        # 4. Update Skills - skip entries missing required 'name'
+        skills_data = data.get('skills', [])
+        for skill in skills_data:
+            skill_name = skill.get('name')
+            if not skill_name:  # Skip if name is missing
+                continue
+            # Check if skill already exists to avoid duplicates
+            existing_skill = Skill.query.filter_by(user_id=user_id, name=skill_name).first()
+            if not existing_skill:
+                new_skill = Skill(
+                    user_id=user_id,
+                    name=skill_name,
+                    level=skill.get('level', 'Intermediate')
+                )
+                db.session.add(new_skill)
+                
+        # 5. Update Projects - skip entries missing required 'name'
+        projects_data = data.get('projects', [])
+        for proj in projects_data:
+            project_name = proj.get('name')
+            if not project_name:  # Skip if name is missing
+                continue
+            technologies = proj.get('technologies', [])
+            if isinstance(technologies, str):  # Handle if AI returns string
+                technologies = [t.strip() for t in technologies.split(',')]
+                
+            new_proj = Project(
+                user_id=user_id,
+                name=project_name,
+                description=proj.get('description'),
+                url=proj.get('url'),
+                technologies=technologies,
+                start_date=parse_date(proj.get('startDate')),
+                end_date=parse_date(proj.get('endDate'))
+            )
+            db.session.add(new_proj)
+            
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Profile updated successfully',
+            'user': user.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Bulk Update Error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500

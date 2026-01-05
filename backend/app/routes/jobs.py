@@ -45,6 +45,88 @@ def get_jobs():
     })
 
 
+@bp.route('/recommendations', methods=['GET'])
+@jwt_required()
+def get_recommendations():
+    """Get personalized job recommendations based on user profile"""
+    user_id = int(get_jwt_identity())
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({'success': False, 'message': 'User not found'}), 404
+
+    # Import profile models
+    from app.models import Education, Experience, Skill, Project
+    
+    # Check if profile is complete enough (at least one entry in any section)
+    has_skills = Skill.query.filter_by(user_id=user_id).first() is not None
+    has_experience = Experience.query.filter_by(user_id=user_id).first() is not None
+    has_education = Education.query.filter_by(user_id=user_id).first() is not None
+    has_projects = Project.query.filter_by(user_id=user_id).first() is not None
+    
+    if not any([has_skills, has_experience, has_education, has_projects]):
+        return jsonify({
+            'success': True,
+            'isProfileComplete': False,
+            'jobs': [],
+            'message': 'Please complete your profile to get personalized recommendations'
+        })
+
+    # Gather search terms from profile
+    search_terms = set()
+    
+    # 1. Skills
+    skills = Skill.query.filter_by(user_id=user_id).all()
+    for s in skills:
+        search_terms.add(s.name)
+        
+    # 2. Experience titles
+    experiences = Experience.query.filter_by(user_id=user_id).all()
+    for e in experiences:
+        search_terms.add(e.title)
+        
+    # 3. Projects
+    projects = Project.query.filter_by(user_id=user_id).all()
+    for p in projects:
+        search_terms.add(p.name)
+
+    # Search for jobs matching any of these terms
+    recommended_jobs = []
+    if search_terms:
+        from sqlalchemy import or_
+        filters = []
+        for term in search_terms:
+            if len(term) > 2:
+                filters.append(Job.title.ilike(f'%{term}%'))
+        
+        if filters:
+            jobs_query = Job.query.filter(Job.status == 'published').filter(or_(*filters))
+            recommended_jobs = jobs_query.order_by(Job.created_at.desc()).limit(10).all()
+
+    # If few recommendations from title, try searching description for skills
+    if len(recommended_jobs) < 5 and has_skills:
+        skill_names = [s.name for s in skills]
+        for skill in skill_names:
+            if len(skill) > 2:
+                skill_jobs = Job.query.filter(Job.status == 'published')\
+                    .filter(Job.description.ilike(f'%{skill}%'))\
+                    .limit(5).all()
+                
+                current_ids = [j.id for j in recommended_jobs]
+                for job in skill_jobs:
+                    if job.id not in current_ids:
+                        recommended_jobs.append(job)
+                        current_ids.append(job.id)
+                        if len(recommended_jobs) >= 10: break
+            if len(recommended_jobs) >= 10: break
+
+    return jsonify({
+        'success': True,
+        'isProfileComplete': True,
+        'jobs': [job.to_dict() for job in recommended_jobs[:10]]
+    })
+
+
 @bp.route('/<int:job_id>', methods=['GET'])
 def get_job(job_id):
     """Get a specific job by ID"""
@@ -189,11 +271,23 @@ def update_job(job_id):
         job.requirements = data['requirements']
     if 'benefits' in data:
         job.benefits = data['benefits']
+    was_published = job.status == 'published'
+    
     if 'status' in data:
         job.status = data['status']
     
+    is_now_published = job.status == 'published'
+    
     try:
         db.session.commit()
+        
+        # Notify followers if the job was just published for the first time or moved from draft to published
+        if is_now_published and not was_published:
+            company = Company.query.get(job.company_id)
+            if company:
+                from app.routes.notifications import notify_company_followers_new_job
+                notify_company_followers_new_job(company, job)
+                db.session.commit()
         return jsonify({
             'success': True,
             'message': 'Job updated successfully',

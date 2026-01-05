@@ -37,8 +37,11 @@ import {
   AlertCircle,
   TrendingUp,
   Target,
+  FileText,
 } from 'lucide-react'
 import { AIEnhancementDialog } from '@/components/profile/AIEnhancementDialog'
+import { CVScanDialog } from '@/components/profile/CVScanDialog'
+import { CVUploadCard } from '@/components/profile/CVUploadCard'
 
 // Form Schemas
 const aboutSchema = z.object({
@@ -109,6 +112,8 @@ export default function Profile() {
   
   // Profile Scan states
   const [showScanModal, setShowScanModal] = useState(false)
+  const [showCVScanModal, setShowCVScanModal] = useState(false)
+  const [cvScanResults, setCvScanResults] = useState<any>(null)
   const [isScanningProfile, setIsScanningProfile] = useState(false)
   const [scanResults, setScanResults] = useState<any>(null)
   const [targetRole, setTargetRole] = useState('')
@@ -494,6 +499,7 @@ export default function Profile() {
                         <Sparkles className="w-4 h-4" />
                         Scan Profile
                       </button>
+
                       <button
                         onClick={() => openEditModal('about')}
                         className="btn btn-outline"
@@ -622,6 +628,16 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      {/* CV Upload Card */}
+      {isOwnProfile && (
+        <CVUploadCard 
+          onScanComplete={(data) => {
+            setCvScanResults(data)
+            setShowCVScanModal(true)
+          }}
+        />
+      )}
 
       {/* Scan Results */}
       {scanResults && (
@@ -1075,6 +1091,17 @@ export default function Profile() {
           setTargetLevel={setTargetLevel}
         />
       )}
+      
+      {/* CV Scan Dialog */}
+      <CVScanDialog
+        isOpen={showCVScanModal}
+        onClose={() => {
+          setShowCVScanModal(false)
+          setCvScanResults(null)
+        }}
+        onSuccess={() => fetchProfile()}
+        initialResults={cvScanResults}
+      />
     </div>
   )
 }
@@ -1668,9 +1695,9 @@ function ScanProfileModal({
                 )}
               </button>
             </div>
+            </div>
           </div>
         </div>
-      </div>
     </div>
   )
 }

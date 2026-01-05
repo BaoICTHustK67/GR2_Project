@@ -91,7 +91,7 @@ def create_app(config_name='development'):
 
     # Register blueprints (per-module strategy)
     from app.routes import auth, users, jobs, blogs, companies, interviews, notifications, admin
-    from app.routes import messages
+    from app.routes import messages, roadmaps
 
     app.register_blueprint(auth.bp)
     app.register_blueprint(users.bp)
@@ -102,6 +102,7 @@ def create_app(config_name='development'):
     app.register_blueprint(notifications.bp)
     app.register_blueprint(messages.bp)
     app.register_blueprint(admin.bp)
+    app.register_blueprint(roadmaps.bp)
 
     # Create database tables
     with app.app_context():
