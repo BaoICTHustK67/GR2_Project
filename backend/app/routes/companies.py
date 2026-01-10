@@ -568,3 +568,190 @@ def get_company_hr_members():
         'members': [m.to_dict() for m in hr_members],
         'adminId': company.created_by
     })
+
+
+@bp.route('/hr-members/<int:user_id>', methods=['DELETE'])
+@jwt_required()
+def remove_hr_member(user_id):
+    """Remove an HR member from the company (admin only)"""
+    current_user_id = int(get_jwt_identity())
+    current_user = User.query.get(current_user_id)
+    
+    if not current_user or not current_user.company_id:
+        return jsonify({
+            'success': False,
+            'message': 'You are not associated with any company'
+        }), 404
+    
+    company = Company.query.get(current_user.company_id)
+    
+    # Check if current user is admin of this company
+    if company.created_by != current_user_id and current_user.user_role != 'admin':
+        return jsonify({
+            'success': False,
+            'message': 'Only company admins can remove members'
+        }), 403
+    
+    # Cannot remove self
+    if user_id == current_user_id:
+        return jsonify({
+            'success': False,
+            'message': 'You cannot remove yourself from the company'
+        }), 400
+    
+    # Cannot remove the company creator/admin
+    if user_id == company.created_by:
+        return jsonify({
+            'success': False,
+            'message': 'Cannot remove the company administrator'
+        }), 400
+    
+    # Find the user to remove
+    user_to_remove = User.query.get(user_id)
+    
+    if not user_to_remove or user_to_remove.company_id != current_user.company_id:
+        return jsonify({
+            'success': False,
+            'message': 'User not found in your company'
+        }), 404
+    
+    try:
+        user_to_remove.company_id = None
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'HR member removed successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': 'Failed to remove HR member'
+        }), 500
+
+
+@bp.route('/search-hr-users', methods=['GET'])
+@jwt_required()
+def search_hr_users():
+    """Search for HR users not in any company (for direct adding)"""
+    current_user_id = int(get_jwt_identity())
+    current_user = User.query.get(current_user_id)
+    
+    if not current_user or not current_user.company_id:
+        return jsonify({
+            'success': False,
+            'message': 'You are not associated with any company'
+        }), 404
+    
+    company = Company.query.get(current_user.company_id)
+    
+    # Check if current user is admin of this company
+    if company.created_by != current_user_id and current_user.user_role != 'admin':
+        return jsonify({
+            'success': False,
+            'message': 'Only company admins can search for HR users'
+        }), 403
+    
+    query = request.args.get('q', '').strip()
+    
+    if len(query) < 2:
+        return jsonify({
+            'success': True,
+            'users': []
+        })
+    
+    # Find HR users without a company and without pending join requests
+    pending_request_user_ids = db.session.query(CompanyJoinRequest.user_id).filter(
+        CompanyJoinRequest.status == 'pending'
+    ).subquery()
+    
+    hr_users = User.query.filter(
+        User.user_role == 'hr',
+        User.company_id.is_(None),
+        User.status == 'active',
+        ~User.id.in_(pending_request_user_ids),
+        (User.name.ilike(f'%{query}%')) | (User.email.ilike(f'%{query}%'))
+    ).limit(10).all()
+    
+    return jsonify({
+        'success': True,
+        'users': [u.to_dict() for u in hr_users]
+    })
+
+
+@bp.route('/hr-members', methods=['POST'])
+@jwt_required()
+def add_hr_member():
+    """Directly add an HR user to the company (admin only, bypasses join request)"""
+    current_user_id = int(get_jwt_identity())
+    current_user = User.query.get(current_user_id)
+    
+    if not current_user or not current_user.company_id:
+        return jsonify({
+            'success': False,
+            'message': 'You are not associated with any company'
+        }), 404
+    
+    company = Company.query.get(current_user.company_id)
+    
+    # Check if current user is admin of this company
+    if company.created_by != current_user_id and current_user.user_role != 'admin':
+        return jsonify({
+            'success': False,
+            'message': 'Only company admins can add members'
+        }), 403
+    
+    data = request.get_json()
+    user_id = data.get('userId')
+    
+    if not user_id:
+        return jsonify({
+            'success': False,
+            'message': 'User ID is required'
+        }), 400
+    
+    user_to_add = User.query.get(user_id)
+    
+    if not user_to_add:
+        return jsonify({
+            'success': False,
+            'message': 'User not found'
+        }), 404
+    
+    if user_to_add.user_role != 'hr':
+        return jsonify({
+            'success': False,
+            'message': 'Only HR users can be added to a company'
+        }), 400
+    
+    if user_to_add.company_id:
+        return jsonify({
+            'success': False,
+            'message': 'User is already associated with a company'
+        }), 400
+    
+    try:
+        user_to_add.company_id = current_user.company_id
+        
+        # Cancel any pending join requests for this user
+        pending_requests = CompanyJoinRequest.query.filter_by(
+            user_id=user_id,
+            status='pending'
+        ).all()
+        for req in pending_requests:
+            req.status = 'cancelled'
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'HR member added successfully',
+            'user': user_to_add.to_dict()
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': 'Failed to add HR member'
+        }), 500

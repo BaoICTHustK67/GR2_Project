@@ -1,0 +1,293 @@
+
+HANOI UNIVERSITY OF SCIENCE AND TECHNOLOGY
+School of Information and communications technology
+
+Software Design Document
+Version 1.3
+
+
+<Project Name>
+Subject: <Name of subject>
+
+
+<Group Number>
+<List of participants>
+
+
+
+
+Hanoi, <month, year>
+<All notations inside the angle bracket are not part of this document, for its purpose is for extra instruction. When using this document, please erase all these notations and/or replace them with corresponding content as instructed>
+<This document, written by Prof. NGUYEN Thi Thu Trang, is used as a case study for student with related courses. Any modifications and/or utilization without the consent of the author is strictly forbidden>
+Table of Contents
+ TOC \o "1-3" Table of Contents PAGEREF _Toc197437766 \h 1
+1Introduction PAGEREF _Toc197437767 \h 5
+1.1Objective PAGEREF _Toc197437768 \h 5
+1.2Scope PAGEREF _Toc197437769 \h 5
+1.3Glossary PAGEREF _Toc197437770 \h 5
+1.4References PAGEREF _Toc197437771 \h 5
+2Overall Description PAGEREF _Toc197437772 \h 7
+2.1General Overview PAGEREF _Toc197437773 \h 7
+2.2Assumptions/Constraints/Risks PAGEREF _Toc197437774 \h 7
+2.2.1Assumptions PAGEREF _Toc197437775 \h 7
+2.2.2Constraints PAGEREF _Toc197437776 \h 7
+2.2.3Risks PAGEREF _Toc197437777 \h 8
+3System Architecture and Architecture Design PAGEREF _Toc197437778 \h 9
+3.1Architectural Patterns PAGEREF _Toc197437779 \h 9
+3.2Interaction Diagrams PAGEREF _Toc197437780 \h 9
+3.3Analysis Class Diagrams PAGEREF _Toc197437781 \h 9
+3.4Unified Analysis Class Diagram PAGEREF _Toc197437782 \h 9
+3.5Security Software Architecture PAGEREF _Toc197437783 \h 9
+4Detailed Design PAGEREF _Toc197437784 \h 10
+4.1User Interface Design PAGEREF _Toc197437785 \h 10
+4.1.1Screen Configuration Standardization PAGEREF _Toc197437786 \h 10
+4.1.2Screen Transition Diagrams PAGEREF _Toc197437787 \h 10
+4.1.3Screen Specifications PAGEREF _Toc197437788 \h 10
+4.2Data Modeling PAGEREF _Toc197437789 \h 10
+4.2.1Conceptual Data Modeling PAGEREF _Toc197437790 \h 10
+4.2.2Database Design PAGEREF _Toc197437791 \h 10
+4.3Non-Database Management System Files PAGEREF _Toc197437792 \h 11
+4.4Class Design PAGEREF _Toc197437793 \h 11
+4.4.1General Class Diagram PAGEREF _Toc197437794 \h 11
+4.4.2Class Diagrams PAGEREF _Toc197437795 \h 11
+4.4.3Class Design PAGEREF _Toc197437796 \h 11
+5Design Considerations PAGEREF _Toc197437797 \h 13
+5.1Goals and Guidelines PAGEREF _Toc197437798 \h 13
+5.2Architectural Strategies PAGEREF _Toc197437799 \h 13
+5.3Coupling and Cohesion PAGEREF _Toc197437800 \h 14
+5.4Design Principles PAGEREF _Toc197437801 \h 14
+5.5Design Patterns PAGEREF _Toc197437802 \h 15
+
+
+List of Figures
+No table of figures entries found.
+
+List of Tables
+ TOC \h \z \c "Table" Table 1. Example of table design PAGEREF _Toc197437803 \h 10
+Table 1. Example of attribute design PAGEREF _Toc197437804 \h 12
+Table 1. Example of operation design PAGEREF _Toc197437805 \h 12
+Table 4. Example of attribute design PAGEREF _Toc197437806 \h 14
+
+Introduction
+<The following subsections of the Software Design Document (SDD) document should provide an overview of the entire SDD.>
+Objective
+<Identify the purpose of this SDD and its intended audience. In this subsection, describe the purpose of the SDD and specify the intended audience for the SDD>
+Scope
+<In this subsection:
+ Identify the software product(s) to be produced by name
+ Explain what the software product(s) will, and, if necessary, will not do
+ Describe the application of the software being specified, including relevant benefits, objectives, and goals  
+ Be consistent with similar statements in higher-level specifications if they exist
+
+This should be an executive-level summary.  Do not enumerate the whole requirements list here
+Note that this will be similar to what was written in the SRS.
+>
+Glossary
+<Listing and explaining the terms appearing in the software’s profession and this document. Any assumption of the reader’s prior knowledge or experience on the subject is ill advised>
+References
+ BIBLIOGRAPHY Centers for Medicare & Medicaid Services. (n.d.). System Design Document Template. Retrieved from Centers for Medicare & Medicaid Services: https://www.cms.gov/Research-Statistics-Data-and-Systems/CMS-Information-Technology/XLC/Downloads/SystemDesignDocument.docx
+
+<Listing the referenced material used in this document, including the one related to the project> 
+Overall Description
+<This section describes the principles and strategies to be used as guidelines when designing and implementing the system.>
+General Overview
+<Briefly introduce the system context and the basic design approach or organization. Provide a brief overview of the system and software architectures and the design goals. Include the high-level context diagram(s) for the system and subsystems provided in previous documents like SRS (e.g., general use case diagram, lower-level use case diagrams, activity diagrams), updated as necessary to reflect any changes that have been made based on more current information or understanding. If the high-level context diagram has been updated, identify the changes that were made and why>
+Assumptions/Constraints/Risks
+Assumptions
+<Describe any assumptions or dependencies regarding the system, software and its use. These may concern such issues as: related software or hardware, operating systems, end-user characteristics, and possible and/or probable changes in functionality>
+
+Constraints
+<Describe any global limitations or constraints that have a significant impact on the design of the system’s hardware, software and/or communications, and describe the associated impact. Such constraints may be imposed by any of the following (the list is not exhaustive):
+Hardware or software environment
+End-user environment
+Availability or volatility of resources
+Standards compliance
+Interoperability requirements
+Interface/protocol requirements
+Licensing requirements
+Data repository and distribution requirements
+Security requirements (or other such regulations)
+Memory or other capacity limitations
+Performance requirements
+Network communications
+Verification and validation requirements (testing)
+Other means of addressing quality goals
+Other requirements described in the Requirements Document
+>
+Risks
+<Describe any risks associated with the system design and proposed mitigation strategies.>
+System Architecture and Architecture Design
+<Briefly describe the architectural design steps>
+Architectural Patterns
+<Specify and briefly describe the chosen architectural patterns and the reasons why they were chosen>
+Interaction Diagrams
+Analysis Class Diagrams
+Unified Analysis Class Diagram
+Security Software Architecture
+<Describe the software components and configuration supporting the security and privacy of the system. Specify the architecture for (1) authentication to validate user identity before allowing access to the system;(2) authorization of users to perform functional activity once logged into the system, (3) encryption protocol to support the business risks and the nature of information, and (4) logging and auditing design, if required.>
+
+Detailed Design
+User Interface Design
+<Suppose that you design a Graphical User Interface (GUI)>
+Screen Configuration Standardization
+Screen Transition Diagrams
+Screen Specifications
+<Screen images should be included in the screen specifications>
+
+Data Modeling
+Conceptual Data Modeling
+<E-R Diagram image and description of entities and relationships>
+Database Design
+Database Management System
+<Specify what is the decision of Database Management System (DBMS) and give some description of the DBMS>
+Database Diagram
+<
+Show the process to design database from E-R diagram
+Show the diagram of DB design
+>
+Database Detail Design
+<
+Give a detail design of each element in the DB diagram. For instance, in a Relational DBMS, give a detail design for each Table and their constraints, illustrated in below table (PK: Primary Key, FK: Foreign Key).
+Table 1. Example of table design
+#
+PK
+FK
+Column name
+Data type
+Default value
+Mandatory
+Description
+1
+x
+ProductID
+2
+x
+CategoryID
+You may add indexing, trigger, view, etc.
+Give the database script>
+Non-Database Management System Files
+<Provide the detailed description of all non-DBMS files if any and include a narrative description of the usage of each file that identifies if the file is used for input, output, or both, and if the file is a temporary file. Also provide an indication of which modules read and write the file and include file structures (refer to the data dictionary). As appropriate, the file structure information should include the following:
+•Record structures, record keys or indexes, and data elements referenced within the records
+•Record length (fixed or maximum variable length) and blocking factors
+•Access method (e.g., index sequential, virtual sequential, random access, etc.)
+•Estimate of the file size or volume of data within the file, including overhead resulting from file access methods
+•Definition of the update frequency of the file (If the file is part of an online transaction-based system, provide the estimated number of transactions per unit of time, and the statistical mean, mode, and distribution of those transactions.)
+•Backup and recovery specifications>
+Class Design
+General Class Diagram
+<General class diagram which shows the whole class diagram of the software. This diagram may have packages, subsystems and classes. Classes in this diagram may not have all attributes and operations>
+Class Diagrams
+<Detail class diagram with full attributes and operations>
+Class Diagram for Package A
+Class Diagram for Subsystem B
+…
+Class Design
+<Detail design for each class>
+Class “SampleClass1”
+<SampleClass1 class image in UML>
+Table 2. Example of attribute design
+#
+Name
+Data type
+Default value
+Description
+1
+2
+
+Table 3. Example of operation design
+#
+Name
+Return type
+Description (purpose)
+1
+2
+
+Parameter:
+x: Default value, description
+y: Default value, description
+Exception:
+AException if …
+BException if …
+
+Method
+How to use parameters / attributes
+Flowchart / activity diagram / sequence diagram if the method has a complex/special algorithm
+
+State
+State diagram if any
+Class “SampleClass2”
+…
+Design Considerations
+<Describe issues which need to be addressed or resolved before attempting to devise a complete design solution. Remember that, you have to refactor your source code to strictly follow the final design>
+Goals and Guidelines
+<Describe any goals, guidelines, principles, or priorities which dominate or embody the design of the system and its software. 
+Examples of such goals might be: an emphasis on speed versus memory use; or working, looking, or “feeling” like an existing product.
+Guidelines include coding guidelines and conventions.
+For each such goal or guideline, describe the reason for its desirability unless it is implicitly obvious. 
+Describe any design policies and/or tactics that do not have sweeping architectural implications (meaning they would not significantly affect the overall organization of the system and its high-level structures), but which nonetheless affect the details of the interface and/or implementation of various aspects of the system (e.g., choice of which specific product to use)>
+Architectural Strategies
+<Describe any design decisions and/or strategies that affect the overall organization of the system and its higher-level structures. These strategies should provide insight into the key abstractions and mechanisms used in the system architecture. Describe the reasoning employed for each decision and/or strategy (possibly referring to previously stated design goals and principles) and how any design goals or priorities were balanced or traded-off. 
+Examples of design decisions might concern (but are not limited to) things like the following:
+•Use of a particular type of product (programming language, database, library, commercial off-the-shelf (COTS) product, etc.)
+•Reuse of existing software components to implement various parts/features of the system
+•Future plans for extending or enhancing the software
+•User interface paradigms (or system input and output models)
+•Hardware and/or software interface paradigms
+•Error detection and recovery
+•Memory management policies
+•External databases and/or data storage management and persistence
+•Distributed data or control over a network
+•Generalized approaches to control
+•Concurrency and synchronization
+•Communication mechanisms
+•Management of other resources
+>
+Design and Program Evaluation
+<Evaluate your design and describe which levels of coupling and cohesion that your design is at. Give proofs for your assumptions. Explain if there is any special design or exceptions>
+<You may show the previous design from which you made improvements to get better levels of coupling and cohesion. You should clarify how and why you did these improvements>
+<Does your design follow the SOLID principles if there are new requirements/changing requirements in the future? Give proofs for your assumptions. Explain if there is any special design or exceptions>
+<You may show the previous design from which you made improvements to get a better design, which follows SOLID principles in spite of additional requirements. You should clarify how and why you did these improvements>
+Cohesion & SRP
+Explain in detail for each class in the table.
+Table  SEQ Table \* ARABIC 4. Cohesion & SRP of AIMS
+#
+Class Name
+PIC
+Cohesion
+SRP
+Solution
+1
+Order
+TuấnNH
+Temporal: m1(), m2()
+Yes:
+2 responsibilities: r1, r2
+Separate m2() to the class XXX…
+2
+<class name>
+<person in charge>
+<which level, why, where>
+<Yes/No, why, where>
+<solution if necessary>
+
+Coupling & Other SOLID
+Explain in detail for each problem in the table. Each problem, you may provide a class diagram before and after the improvement.
+Table  SEQ Table \* ARABIC 5. Coupling & other SOLID of AIMS
+#
+Problem
+PIC
+Location
+Solution
+1
+Control coupling
+TuấnNH
+Class A and class B
+Create a new class C as a superclass for A and B…
+2
+<Any bad coupling level or any SOLID violation>
+<person in charge>
+<list of class or you may provide a class diagram if necessary>
+
+Design Patterns
+<Do you use any design patterns for your design? If yes, describe detailly why you use those design patterns? Describe in detail on the solutions and how to implement each design pattern>
+

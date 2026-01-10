@@ -185,6 +185,9 @@ export const companiesAPI = {
   reviewJoinRequest: (requestId: number, action: 'approve' | 'reject') =>
     api.put(`/companies/join-requests/${requestId}`, { action }),
   getHRMembers: () => api.get('/companies/hr-members'),
+  removeHRMember: (userId: number) => api.delete(`/companies/hr-members/${userId}`),
+  searchHRUsers: (query: string) => api.get('/companies/search-hr-users', { params: { q: query } }),
+  addHRMember: (userId: number) => api.post('/companies/hr-members', { userId }),
 }
 
 // Interviews API
