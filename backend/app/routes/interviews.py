@@ -19,7 +19,7 @@ def clean_json(text):
 @jwt_required()
 def get_interviews():
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = int(get_jwt_identity())
         interviews = Interview.query.filter_by(user_id=current_user_id).order_by(Interview.created_at.desc()).all()
         return jsonify({
             'success': True,
@@ -32,7 +32,7 @@ def get_interviews():
 @jwt_required()
 def get_latest_interviews():
     try:
-        current_user_id = get_jwt_identity()
+        current_user_id = int(get_jwt_identity())
         limit = request.args.get('limit', 5, type=int)
         interviews = Interview.query.filter_by(user_id=current_user_id).order_by(Interview.created_at.desc()).limit(limit).all()
         return jsonify({
@@ -110,7 +110,7 @@ def generate_interview_questions():
         tech_stack_list = [t.strip() for t in tech_stack_list]
 
         interview = Interview(
-            user_id=current_user_id,
+            user_id=int(current_user_id),
             role=role,
             interview_type=interview_type,
             tech_stack=tech_stack_list,
