@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { jobsAPI } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import { formatDate } from '@/lib/utils'
+import ConfirmModal from '@/components/ui/ConfirmModal'
 import {
   Plus,
   Briefcase,
@@ -53,6 +54,7 @@ export default function HRJobs() {
   const [openMenu, setOpenMenu] = useState<number | null>(null)
   const [menuPosition, setMenuPosition] = useState<MenuPosition>({ top: 0, right: 0 })
   const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const jobsPerPage = 10
 
@@ -115,24 +117,27 @@ export default function HRJobs() {
     setOpenMenu(null)
   }
 
-  const deleteJob = async (jobId: number) => {
-    if (!confirm('Are you sure you want to delete this job? This action cannot be undone.')) {
-      return
-    }
-    
+  const handleDeleteClick = (jobId: number) => {
     setDeletingId(jobId)
+    setShowDeleteModal(true)
+    setOpenMenu(null)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deletingId) return
+    
     try {
-      const response = await jobsAPI.deleteJob(jobId)
+      const response = await jobsAPI.deleteJob(deletingId)
       if (response.data.success) {
-        setJobs((prev) => prev.filter((job) => job.id !== jobId))
+        setJobs((prev) => prev.filter((job) => job.id !== deletingId))
         toast.success('Job deleted successfully')
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to delete job')
     } finally {
       setDeletingId(null)
+      setShowDeleteModal(false)
     }
-    setOpenMenu(null)
   }
 
   const filteredJobs = jobs.filter((job) => {
@@ -452,7 +457,7 @@ export default function HRJobs() {
                         )}
                       </button>
                       <button
-                        onClick={() => deleteJob(job.id)}
+                        onClick={() => handleDeleteClick(job.id)}
                         className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 w-full rounded-b-lg"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -464,6 +469,19 @@ export default function HRJobs() {
               </div>
             </>
           )}
+
+          <ConfirmModal
+            isOpen={showDeleteModal}
+            onClose={() => {
+              setShowDeleteModal(false)
+              setDeletingId(null)
+            }}
+            onConfirm={handleConfirmDelete}
+            title="Delete Job"
+            message="Are you sure you want to delete this job? This action cannot be undone."
+            confirmText="Delete"
+            type="danger"
+          />
         </>
       )}
     </div>

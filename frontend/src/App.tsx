@@ -9,6 +9,8 @@ import HRLayout from '@/layouts/HRLayout'
 // Pages
 import SignIn from '@/pages/auth/SignIn'
 import SignUp from '@/pages/auth/SignUp'
+import ForgotPassword from '@/pages/auth/ForgotPassword'
+import ResetPassword from '@/pages/auth/ResetPassword'
 import Feed from '@/pages/Feed'
 import Jobs from '@/pages/Jobs'
 import JobDetail from '@/pages/JobDetail'
@@ -85,6 +87,8 @@ function App() {
       <Route element={<AuthLayout />}>
         <Route path="/sign-in" element={<SignIn />} />
         <Route path="/sign-up" element={<SignUp />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Route>
 
       {/* Main App Routes */}

@@ -18,6 +18,7 @@ import {
   UserPlus,
   Check
 } from 'lucide-react'
+import ConfirmModal from '@/components/ui/ConfirmModal'
 
 interface Company {
   id: number
@@ -123,6 +124,22 @@ export default function HRCompany() {
   const [hrUserSearchResults, setHrUserSearchResults] = useState<HRMember[]>([])
   const [searchingHrUsers, setSearchingHrUsers] = useState(false)
   const [addingUserId, setAddingUserId] = useState<number | null>(null)
+
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    type: 'danger' | 'warning' | 'info'
+    confirmText?: string
+    onConfirm: () => void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'danger',
+    onConfirm: () => {}
+  })
 
   useEffect(() => {
     loadData()
@@ -324,11 +341,18 @@ export default function HRCompany() {
   }
 
   // Remove HR member from company
-  const handleRemoveMember = async (userId: number) => {
-    if (!confirm('Are you sure you want to remove this HR member from the company?')) {
-      return
-    }
-    
+  const handleRemoveMember = (userId: number) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Remove HR Member',
+      message: 'Are you sure you want to remove this member from the HR team? They will no longer have access to company management features.',
+      type: 'danger',
+      confirmText: 'Remove',
+      onConfirm: () => executeRemoveMember(userId)
+    })
+  }
+
+  const executeRemoveMember = async (userId: number) => {
     setRemovingMemberId(userId)
     try {
       const response = await companiesAPI.removeHRMember(userId)
@@ -706,13 +730,27 @@ export default function HRCompany() {
                     </div>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleReviewRequest(request.id, 'approve')}
+                        onClick={() => setConfirmModal({
+                          isOpen: true,
+                          title: 'Approve Join Request',
+                          message: `Are you sure you want to approve ${request.requester?.name}'s request to join the company?`,
+                          type: 'info',
+                          confirmText: 'Approve',
+                          onConfirm: () => handleReviewRequest(request.id, 'approve')
+                        })}
                         className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors"
                       >
                         Approve
                       </button>
                       <button
-                        onClick={() => handleReviewRequest(request.id, 'reject')}
+                        onClick={() => setConfirmModal({
+                          isOpen: true,
+                          title: 'Reject Join Request',
+                          message: `Are you sure you want to reject ${request.requester?.name}'s request?`,
+                          type: 'danger',
+                          confirmText: 'Reject',
+                          onConfirm: () => handleReviewRequest(request.id, 'reject')
+                        })}
                         className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors"
                       >
                         Reject
@@ -879,6 +917,17 @@ export default function HRCompany() {
             </div>
           </div>
         )}
+        
+        {/* Confirmation Modal */}
+        <ConfirmModal
+          isOpen={confirmModal.isOpen}
+          onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+          onConfirm={confirmModal.onConfirm}
+          title={confirmModal.title}
+          message={confirmModal.message}
+          type={confirmModal.type}
+          confirmText={confirmModal.confirmText}
+        />
       </div>
     )
   }
@@ -1240,6 +1289,18 @@ export default function HRCompany() {
           </div>
         </div>
       )}
+
+      
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+        confirmText={confirmModal.confirmText}
+      />
     </div>
   )
 }

@@ -464,7 +464,7 @@ export default function Profile() {
             </div>
 
             {/* Info */}
-            <div className="flex-1 pt-12 sm:pt-0">
+            <div className="flex-1 pt-24 sm:pt-20">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900 dark:text-white">

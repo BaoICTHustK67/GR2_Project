@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { interviewsAPI } from '@/lib/api'
 import type { Interview } from '@/types'
 import { formatDate } from '@/lib/utils'
+import ConfirmModal from '@/components/ui/ConfirmModal'
 import {
   Video,
   Clock,
@@ -17,6 +18,7 @@ export default function Interviews() {
   const [interviews, setInterviews] = useState<Interview[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all')
+  const [deleteId, setDeleteId] = useState<number | null>(null)
 
   useEffect(() => {
     fetchInterviews()
@@ -35,16 +37,21 @@ export default function Interviews() {
     }
   }
 
-  const handleDelete = async (e: React.MouseEvent, id: number) => {
-    e.preventDefault() // Prevent navigation if button is inside a Link or clickable card
-    if (window.confirm('Are you sure you want to delete this interview?')) {
-      try {
-        await interviewsAPI.deleteInterview(id)
-        setInterviews(interviews.filter((i) => i.id !== id))
-      } catch (error) {
-        console.error('Error deleting interview:', error)
-        alert('Failed to delete interview')
-      }
+  const handleDelete = (e: React.MouseEvent, id: number) => {
+    e.preventDefault()
+    setDeleteId(id)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deleteId) return
+
+    try {
+      await interviewsAPI.deleteInterview(deleteId)
+      setInterviews(interviews.filter((i) => i.id !== deleteId))
+      setDeleteId(null)
+    } catch (error) {
+      console.error('Error deleting interview:', error)
+      alert('Failed to delete interview')
     }
   }
 
@@ -185,6 +192,16 @@ export default function Interviews() {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Interview"
+        message="Are you sure you want to delete this interview? This action cannot be undone."
+        confirmText="Delete"
+        type="danger"
+      />
     </div>
   )
 }
@@ -272,7 +289,7 @@ function InterviewCard({
                 </div>
             )}
         </div>
-        </div>
+      </div>
 
       {/* Tech Stack */}
       {interview.techstack && interview.techstack.length > 0 && (

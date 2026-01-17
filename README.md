@@ -232,7 +232,3 @@ VITE_API_URL=http://localhost:5000/api
 ## 📄 License
 
 This project is licensed under the MIT License.
-
-## 🙏 Acknowledgments
-
-This project is inspired by the original Hustify Programming application, recreated using Flask and React for educational purposes.
