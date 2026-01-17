@@ -59,7 +59,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
    connectSocket: () => {
      if (get().socket) return
      
-     const socket = io('http://localhost:5000') // Adjust URL if needed
+      // Use the API URL from environment, removing /api suffix for socket connection
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+      const socketUrl = apiUrl.replace('/api', '')
+      const socket = io(socketUrl)
      
      socket.on('connect', () => {
          console.log('Socket connected')
