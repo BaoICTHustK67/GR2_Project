@@ -76,10 +76,19 @@ def create_app(config_name='development'):
             'error': 'token_revoked'
         }), 401
 
-    # Enable CORS
+    # Enable CORS - include FRONTEND_URL for production
+    frontend_url = app.config.get('FRONTEND_URL', 'http://localhost:5173')
+    allowed_origins = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        frontend_url
+    ]
+    # Remove duplicates and empty strings
+    allowed_origins = list(set(filter(None, allowed_origins)))
+    
     CORS(app, resources={
         r"/api/*": {
-            "origins": ["http://localhost:5173", "http://localhost:3000"],
+            "origins": allowed_origins,
             "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True

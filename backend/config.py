@@ -33,10 +33,23 @@ class DevelopmentConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///hustconnect.db'
 
 
+def _get_database_url():
+    """Convert DATABASE_URL to use psycopg3 driver for Python 3.13 compatibility"""
+    url = os.environ.get('DATABASE_URL')
+    if url:
+        # Convert postgres:// to postgresql:// (Heroku-style URLs)
+        if url.startswith('postgres://'):
+            url = url.replace('postgres://', 'postgresql+psycopg://', 1)
+        # Convert postgresql:// to postgresql+psycopg://
+        elif url.startswith('postgresql://'):
+            url = url.replace('postgresql://', 'postgresql+psycopg://', 1)
+    return url
+
+
 class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    SQLALCHEMY_DATABASE_URI = _get_database_url()
 
 
 class TestingConfig(Config):
