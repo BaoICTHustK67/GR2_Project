@@ -37,7 +37,6 @@ import {
   AlertCircle,
   TrendingUp,
   Target,
-  FileText,
 } from 'lucide-react'
 import { AIEnhancementDialog } from '@/components/profile/AIEnhancementDialog'
 import { CVScanDialog } from '@/components/profile/CVScanDialog'

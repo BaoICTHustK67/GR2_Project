@@ -6,6 +6,7 @@ export interface User {
   userRole: 'normal' | 'hr' | 'admin'
   status: 'active' | 'deactivated'
   image?: string
+  profileImage?: string // Alias for image, used in some components
   coverImage?: string
   bio?: string
   location?: string
@@ -33,14 +34,19 @@ export interface Company {
   name: string
   description?: string
   logo?: string
+  coverImage?: string
   website?: string
   industry?: string
   size?: string
+  companySize?: string // Alias for size
   location?: string
   founded?: number
+  foundedYear?: number // Alias for founded
   followersCount?: number
   jobCount?: number
   createdAt?: string
+  linkedin?: string
+  email?: string
 }
 
 // Job types

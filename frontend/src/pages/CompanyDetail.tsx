@@ -10,7 +10,6 @@ import {
   Globe,
   Linkedin,
   Mail,
-  Phone,
   Briefcase,
   Clock,
   Loader2,

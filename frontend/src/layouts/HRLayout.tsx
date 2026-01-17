@@ -28,7 +28,7 @@ const navigation = [
 
 export default function HRLayout() {
   const { user, logout } = useAuthStore()
-  const { isDarkMode, toggleTheme } = useThemeStore()
+  const { isDarkMode, toggleDarkMode } = useThemeStore()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -89,9 +89,9 @@ export default function HRLayout() {
         {/* User Section */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-800">
           <div className="flex items-center gap-3 mb-4">
-            {user?.profileImage ? (
+            {user?.image ? (
               <img
-                src={user.profileImage}
+                src={user.image}
                 alt={user.name}
                 className="w-10 h-10 rounded-full object-cover"
               />
@@ -132,7 +132,7 @@ export default function HRLayout() {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={toggleTheme}
+              onClick={toggleDarkMode}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               {isDarkMode ? (

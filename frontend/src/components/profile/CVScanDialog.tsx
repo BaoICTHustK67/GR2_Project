@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { Fragment } from 'react'
-import { Upload, FileText, X, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Upload, X, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 import { usersAPI } from '@/lib/api'
 import toast from 'react-hot-toast'
 

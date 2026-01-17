@@ -52,19 +52,19 @@ export default function CreateJob() {
     fields: responsibilityFields,
     append: appendResponsibility,
     remove: removeResponsibility,
-  } = useFieldArray({ control, name: 'responsibilities' as any })
+  } = useFieldArray({ control, name: 'responsibilities' } as any)
 
   const {
     fields: requirementFields,
     append: appendRequirement,
     remove: removeRequirement,
-  } = useFieldArray({ control, name: 'requirements' as any })
+  } = useFieldArray({ control, name: 'requirements' } as any)
 
   const {
     fields: benefitFields,
     append: appendBenefit,
     remove: removeBenefit,
-  } = useFieldArray({ control, name: 'benefits' as any })
+  } = useFieldArray({ control, name: 'benefits' } as any)
 
   const onSubmit = async (data: JobFormData) => {
     setIsSubmitting(true)

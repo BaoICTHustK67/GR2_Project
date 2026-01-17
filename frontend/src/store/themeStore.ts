@@ -3,6 +3,7 @@ import { create } from 'zustand'
 interface ThemeState {
   isDarkMode: boolean
   toggleDarkMode: () => void
+  toggleTheme: () => void // Alias for toggleDarkMode
   setDarkMode: (value: boolean) => void
 }
 
@@ -20,6 +21,17 @@ export const useThemeStore = create<ThemeState>((set) => {
   return {
     isDarkMode: initial,
     toggleDarkMode: () =>
+      set((state) => {
+        const newValue = !state.isDarkMode
+        localStorage.setItem('darkMode', String(newValue))
+        if (newValue) {
+          document.documentElement.classList.add('dark')
+        } else {
+          document.documentElement.classList.remove('dark')
+        }
+        return { isDarkMode: newValue }
+      }),
+    toggleTheme: () =>
       set((state) => {
         const newValue = !state.isDarkMode
         localStorage.setItem('darkMode', String(newValue))

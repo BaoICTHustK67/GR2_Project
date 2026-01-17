@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Upload, Loader2, FileText, CheckCircle2 } from 'lucide-react'
+import { Upload, Loader2, FileText } from 'lucide-react'
 import { usersAPI } from '@/lib/api'
 import toast from 'react-hot-toast'
 

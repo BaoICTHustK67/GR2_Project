@@ -10,8 +10,6 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -20,7 +18,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend,
   AreaChart,
   Area
 } from 'recharts'
@@ -232,7 +229,7 @@ export default function AdminDashboard() {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {roleDistribution.map((entry, index) => (
+                  {roleDistribution.map((_entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
